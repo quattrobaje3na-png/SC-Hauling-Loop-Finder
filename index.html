@@ -3,150 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMDR Quattro Logistics Tracker</title>
+    <title id="page-title">CMDR Quattro Logistics Tracker</title>
     <style>
-        :root { --gold: #c1a058; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .form-container { max-width: 800px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid #333; border-radius: 8px; }
-        h2, h3 { color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
-        .form-section { border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
-        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .input-group { display: flex; flex-direction: column; }
-        label { font-size: 0.8rem; margin-bottom: 5px; color: #888; }
-        select, input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; }
-        .delivery-zone { background: #222; padding: 15px; border-radius: 4px; margin-bottom: 10px; position: relative; }
-        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .split-btn { background: var(--gold); color: black; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-        .remove-btn { background: #822; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; }
-        .scu-split-wrap { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-        .scu-split-wrap input { width: 100px; border-color: var(--gold); }
+        /* Restored original style as requested */
+        body { font-family: sans-serif; }
+        .container { padding: 20px; }
+        .input-group { margin-bottom: 15px; }
+        select, input { padding: 8px; margin-right: 10px; }
+        .delivery-zone { border: 1px solid #ccc; padding: 15px; margin-top: 10px; background: #f9f9f9; }
+        .hidden { display: none; }
+        .btn { padding: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="form-container">
-    <h2>Hauling Manifest</h2>
-    
-    <div class="form-section">
-        <h3>Primary Pickup</h3>
-        <div class="input-row">
-            <div class="input-group">
-                <label>System</label>
-                <select id="p-system" onchange="updateRegions('p')"></select>
-            </div>
-            <div class="input-group">
-                <label>Region/Planet</label>
-                <select id="p-region" onchange="updateLocations('p')"></select>
-            </div>
-            <div class="input-group">
-                <label>Landing Zone</label>
-                <select id="p-location"></select>
-            </div>
-        </div>
-        <div class="input-group" style="max-width: 200px;">
-            <label>Total SCU Cargo</label>
-            <input type="number" id="total-scu" value="64" oninput="calculateSplits()">
-        </div>
+<div class="container">
+    <h1 id="header-title">Logistics Management</h1>
+
+    <div class="input-group">
+        <label>Manifest Title (Max 100 chars):</label>
+        <input type="text" id="manifest-title" maxlength="100" style="width: 300px;" placeholder="Enter mission title...">
     </div>
 
-    <div class="form-section" id="delivery-container">
+    <div class="form-section">
+        <h3>Pickup Point</h3>
+        <select id="p-system" onchange="updateRegions('p')"></select>
+        <select id="p-region" onchange="updateLocations('p')"></select>
+        <select id="p-location"></select>
+        <input type="number" id="total-scu" value="64" oninput="calculateSplits()" placeholder="Total SCU">
+    </div>
+
+    <hr>
+
+    <div id="delivery-container">
         <h3>Delivery Destinations</h3>
         
         <div class="delivery-zone" id="zone-1">
-            <div class="zone-header"><span>Drop Point A</span></div>
-            <div class="input-row">
-                <select id="d1-system" onchange="updateRegions('d1')"></select>
-                <select id="d1-region" onchange="updateLocations('d1')"></select>
-                <select id="d1-location"></select>
-            </div>
-            <div class="scu-split-wrap">
-                <label>Allocation:</label>
-                <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
-            </div>
+            <strong>Destination A</strong><br><br>
+            <select id="d1-system" onchange="updateRegions('d1')"></select>
+            <select id="d1-region" onchange="updateLocations('d1')"></select>
+            <select id="d1-location"></select>
+            <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
         </div>
 
-        <button type="button" class="split-btn" id="split-trigger" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
+        <div style="margin-top:10px;">
+            <button class="btn" id="split-btn" onclick="toggleSplit()">+ Add Split Delivery</button>
+        </div>
 
-        <div class="delivery-zone" id="zone-2" style="display: none;">
-            <div class="zone-header">
-                <span>Drop Point B</span>
-                <button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button>
-            </div>
-            <div class="input-row">
-                <select id="d2-system" onchange="updateRegions('d2')"></select>
-                <select id="d2-region" onchange="updateLocations('d2')"></select>
-                <select id="d2-location"></select>
-            </div>
-            <div class="scu-split-wrap">
-                <label>Allocation:</label>
-                <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
-            </div>
+        <div class="delivery-zone hidden" id="zone-2">
+            <strong>Destination B</strong> 
+            <button onclick="toggleSplit()" style="float:right; color:red;">Remove</button><br><br>
+            <select id="d2-system" onchange="updateRegions('d2')"></select>
+            <select id="d2-region" onchange="updateLocations('d2')"></select>
+            <select id="d2-location"></select>
+            <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
         </div>
     </div>
+
+    <br>
+    <button class="btn" onclick="exportJSON()">Export JSON Manifest</button>
 </div>
 
 <script>
-// Data structure built from your previous sessions
+// JSON Locations Data from previous merges
 const starCitizenData = {
     "Stanton": {
-        "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2"],
-        "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123"],
-        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HUR-L2", "HUR-L3", "HDMS-Edmond", "HDMS-Hadley", "HDMS-Oparei"],
+        "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2", "ARC-L3", "ARC-L4", "ARC-L5"],
+        "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123", "Lost and Found", "Good Times Temple", "Samson & Sons Salvage Center"],
+        "Lyria": ["Humboldt Mines", "Loveridge Mineral Reserve", "Shubin Mining Facility SAL-2", "Shubin Mining Facility SAL-5", "Shubin Processing Facility SPAL-3", "Shubin Processing Facility SPAL-7", "Shubin Processing Facility SPAL-9", "Shubin Processing Facility SPAL-12", "Shubin Processing Facility SPAL-16", "Shubin Processing Facility SPAL-21", "Security Depot Lyria-1", "Elsewhere", "Teddy's Playhouse", "The Orphanage", "The Pit", "Wheeler's", "Paradise Cove", "Buckets", "Launch Pad"],
+        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HUR-L2", "HUR-L3", "HUR-L4", "HUR-L5", "HDMS-Edmond", "HDMS-Hadley", "HDMS-Oparei", "HDMS-Pinewood", "HDMS-Stanhope", "HDMS-Thedus", "HDSF-Adlai", "HDSF-Barnabas", "HDSF-Breckinridge", "HDSF-Colfax", "HDSF-Damaris", "HDSF-Elbridge", "HDSF-Hendricks", "HDSF-Hiram", "HDSF-Hobart", "HDSF-Ishmael", "HDSF-Millerand", "HDSF-Rufus", "HDSF-Sherman", "HDSF-Tamar", "HDSF-Tompkins", "HDSF-Zacharias", "HDRSO-Bramen", "Security Depot Hurston-1", "Reclamation & Disposal Orinth", "HDMO-Calthrope", "Downed Relay AC-652", "Rappel"],
         "Crusader": ["Orison", "Seraphim Station", "CRU-L1", "CRU-L4", "CRU-L5"],
-        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MIC-L2"]
+        "Cellin": ["Gallete Family Farms", "Terra Mills HydroFarm", "Tram & Myers Mining", "Hickes Research Outpost", "Security Post Criska", "Security Post Dipur", "Security Post Lespin"],
+        "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Security Post Moluto", "Security Post Prashad", "Security Post Thaquray", "Jump Town", "Brio's Breaker Yard", "Nuen Waste Management", "Whistlers Crypt", "Yadar Valley", "Dunlow Ridge Aid Shelter", "Eager Flats Aid Shelter", "Tamdon Plains Aid Shelter", "Wolf Point Aid Shelter"],
+        "Yela": ["GrimHEX", "Afterlife", "ArcCorp Mining Area 157", "Aston Ridge Aid Shelter", "Benson Mining Outpost", "Connor's", "Deakins Research Outpost", "Jumptown", "Kosso Basin Aid Shelter", "Nakamura Valley Aid Shelter", "NT-999-XX", "NT-999-XXII", "Security Post Opal", "Security Post Wan", "Talarine Divide Aid Shelter", "Utopia", "Abandoned Outpost"],
+        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MIC-L2", "MIC-L3", "MIC-L4", "MIC-L5", "MT DataCenter 2UB-RB9-5", "MT DataCenter 4HJ-LVE-A", "MT DataCenter 5WQ-R2V-C", "MT DataCenter 8FK-Q2X-K", "MT DataCenter D79-ECG-R", "MT DataCenter E2Q-NSG-Y", "MT DataCenter TMG-XEV-2", "MT DataCenter QVX-J88-J", "MT DataCenter L8P-JUC-8"],
+        "Calliope": ["Shubin Mining Facility SMCa-6", "Shubin Mining Facility SMCa-8", "Shubin Processing Facility SPMC-1", "Shubin Processing Facility SPMC-3", "Shubin Processing Facility SPMC-5", "Shubin Processing Facility SPMC-10", "Shubin Processing Facility SPMC-11", "Shubin Processing Facility SPMC-14", "Rayari Anvik Research Outpost", "Rayari Kaltag Research Outpost"]
     },
     "Pyro": {
-        "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "PYR1-L2 (PYAM-FARSTAT-1-2)"],
-        "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station)"],
-        "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)"],
-        "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "Endgame (Rough & Ready)"]
+        "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "Stanton Gateway", "PYR1-L1", "PYR1-L2 (PYAM-FARSTAT-1-2)", "PYR1-L3 (PYAM-FARSTAT-1-3 / Akiro Cluster)", "PYR1-L5 (PYAM-FARSTAT-1-5)"],
+        "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station - Rough & Ready)"],
+        "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)", "PYR3-L1 (Starlight Service Station - Prosperity)", "PYR3-L3 (Patch City - Rough & Ready)", "PYR3-L5 (PYAM-FARSTAT-3-5)"],
+        "Pyro IV": ["Chawla's Beach", "Dinger's Depot", "Fallow Field", "Goner's Deal", "Sacren's Plot"],
+        "Pyro V": ["PYR5-L1 (PYAM-FARSTAT-5-1)", "PYR5-L2 (Gaslight - Rough & Ready)", "PYR5-L3 (PYAM-FARSTAT-5-3)", "PYR5-L4 (Rod's Fuel 'N Supplies - Prosperity)", "PYR5-L5 (Rat's Nest - Rough & Ready)"],
+        "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "PYR6-L3 (Endgame - Rough & Ready)", "PYR6-L4 (Dudley & Daughters - Prosperity)", "PYR6-L5 (Megumi Refueling - Rough & Ready)"]
     },
     "Nyx": { "Delamar": ["Levski", "Mining Area 157"] }
 };
 
-let isSplit = false;
+let splitActive = false;
 
 function init() {
-    ['p', 'd1', 'd2'].forEach(prefix => {
-        const sysSelect = document.getElementById(`${prefix}-system`);
-        Object.keys(starCitizenData).forEach(sys => {
-            sysSelect.add(new Option(sys, sys));
-        });
-        updateRegions(prefix);
+    ['p', 'd1', 'd2'].forEach(pre => {
+        const sysSel = document.getElementById(`${pre}-system`);
+        Object.keys(starCitizenData).forEach(s => sysSel.add(new Option(s, s)));
+        updateRegions(pre);
     });
     calculateSplits();
 }
 
-function updateRegions(prefix) {
-    const sys = document.getElementById(`${prefix}-system`).value;
-    const regSelect = document.getElementById(`${prefix}-region`);
-    regSelect.innerHTML = '';
-    Object.keys(starCitizenData[sys]).forEach(reg => {
-        regSelect.add(new Option(reg, reg));
-    });
-    updateLocations(prefix);
+function updateRegions(pre) {
+    const sys = document.getElementById(`${pre}-system`).value;
+    const regSel = document.getElementById(`${pre}-region`);
+    regSel.innerHTML = '';
+    Object.keys(starCitizenData[sys]).forEach(r => regSel.add(new Option(r, r)));
+    updateLocations(pre);
 }
 
-function updateLocations(prefix) {
-    const sys = document.getElementById(`${prefix}-system`).value;
-    const reg = document.getElementById(`${prefix}-region`).value;
-    const locSelect = document.getElementById(`${prefix}-location`);
-    locSelect.innerHTML = '';
-    starCitizenData[sys][reg].forEach(loc => {
-        locSelect.add(new Option(loc, loc));
-    });
+function updateLocations(pre) {
+    const sys = document.getElementById(`${pre}-system`).value;
+    const reg = document.getElementById(`${pre}-region`).value;
+    const locSel = document.getElementById(`${pre}-location`);
+    locSel.innerHTML = '';
+    starCitizenData[sys][reg].forEach(l => locSel.add(new Option(l, l)));
 }
 
 function toggleSplit() {
-    isSplit = !isSplit;
-    document.getElementById('zone-2').style.display = isSplit ? 'block' : 'none';
-    document.getElementById('split-trigger').style.display = isSplit ? 'none' : 'block';
+    splitActive = !splitActive;
+    document.getElementById('zone-2').classList.toggle('hidden');
+    document.getElementById('split-btn').classList.toggle('hidden');
     calculateSplits();
 }
 
 function calculateSplits() {
     const total = parseFloat(document.getElementById('total-scu').value) || 0;
-    if (isSplit) {
+    if (splitActive) {
         document.getElementById('scu-1').value = total / 2;
         document.getElementById('scu-2').value = total / 2;
     } else {
@@ -156,14 +136,30 @@ function calculateSplits() {
 
 function manualSplit(origin) {
     const total = parseFloat(document.getElementById('total-scu').value) || 0;
-    if (!isSplit) return;
+    if (!splitActive) return;
     if (origin === 1) {
-        const val1 = parseFloat(document.getElementById('scu-1').value) || 0;
-        document.getElementById('scu-2').value = Math.max(0, total - val1);
+        const v1 = parseFloat(document.getElementById('scu-1').value) || 0;
+        document.getElementById('scu-2').value = Math.max(0, total - v1);
     } else {
-        const val2 = parseFloat(document.getElementById('scu-2').value) || 0;
-        document.getElementById('scu-1').value = Math.max(0, total - val2);
+        const v2 = parseFloat(document.getElementById('scu-2').value) || 0;
+        document.getElementById('scu-1').value = Math.max(0, total - v2);
     }
+}
+
+function exportJSON() {
+    const manifest = {
+        title: document.getElementById('manifest-title').value.substring(0, 100),
+        pickup: document.getElementById('p-location').value,
+        total_scu: document.getElementById('total-scu').value,
+        destinations: [
+            { loc: document.getElementById('d1-location').value, scu: document.getElementById('scu-1').value }
+        ]
+    };
+    if (splitActive) {
+        manifest.destinations.push({ loc: document.getElementById('d2-location').value, scu: document.getElementById('scu-2').value });
+    }
+    console.log(JSON.stringify(manifest, null, 2));
+    alert("Manifest logged to console!");
 }
 
 window.onload = init;
