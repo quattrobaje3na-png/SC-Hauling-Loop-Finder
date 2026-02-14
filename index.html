@@ -95,12 +95,16 @@
 
 <script>
     let globalContractData = [];
-    let titleWordLibrary = new Set(["Bulk", "Haul", "Cargo", "Independent", "Urgent", "Red", "Wind", "Alliance", "Distribution"]);
+    let titleWordLibrary = new Set(["Bulk", "Haul", "Cargo", "Urgent", "Red", "Wind", "Independent", "Alliance", "Distribution"]);
     
-    // Core selection lists
-    let systems = ["Stanton", "Pyro", "Nyx"];
-    let regions = ["Crusader", "Hurston", "ArcCorp", "microTech", "Levski", "Pyro I"];
-    let categories = ["Hauling", "Legal Cargo", "Salvage", "Medical", "Event"];
+    // Mapping Systems to Regions
+    const systemMap = {
+        "Stanton": ["ArcCorp", "Crusader", "Hurston", "microTech", "Levski"],
+        "Pyro": ["Pyro I", "Pyro II", "Pyro III", "Pyro IV", "Pyro V", "Pyro VI", "Bloom", "Checkmate"],
+        "Nyx": ["Delamar"]
+    };
+
+    const categories = ["Hauling", "Legal Cargo", "Salvage", "Medical", "Event"];
 
     function addContract(initialData = null) {
         const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -114,7 +118,7 @@
                 
                 <div class="row">
                     <div class="input-group" style="flex:2">
-                        <label>Contract Title (Adaptive Phrase / Word Prediction)</label>
+                        <label>Contract Title (Predictive)</label>
                         <input type="text" class="c-name" 
                                id="title-input-${id}"
                                list="dynamic-title-words" 
@@ -129,7 +133,7 @@
                     <div class="row">
                         <div class="input-group">
                             <label>Category</label>
-                            <select class="c-category" id="cat-${id}" onchange="updateAdaptiveSuggestions('${id}')">
+                            <select class="c-category" onchange="updateAdaptiveSuggestions('${id}')">
                                 ${categories.map(c => `<option value="${c}" ${initialData?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
                             </select>
                         </div>
@@ -143,13 +147,12 @@
                         <div class="input-group">
                             <span class="section-label">Origin (Pickup)</span>
                             <div class="row">
-                                <select class="c-p-system" id="p-sys-${id}" onchange="updateAdaptiveSuggestions('${id}')">
+                                <select class="c-p-system" id="p-sys-${id}" onchange="updateRegionList('${id}', 'p')">
                                     <option value="">-- System --</option>
-                                    ${systems.map(s => `<option value="${s}" ${initialData?.pSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                    ${Object.keys(systemMap).map(s => `<option value="${s}" ${initialData?.pSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
                                 </select>
                                 <select class="c-p-region" id="p-reg-${id}">
-                                    <option value="">-- Region --</option>
-                                    ${regions.map(r => `<option value="${r}" ${initialData?.pRegion === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                    <option value="">-- Select System First --</option>
                                 </select>
                             </div>
                             <div class="manifest-area" id="p-man-${id}"></div>
@@ -158,13 +161,12 @@
                         <div class="input-group">
                             <span class="section-label">Destination (Delivery)</span>
                             <div class="row">
-                                <select class="c-d-system" id="d-sys-${id}">
+                                <select class="c-d-system" id="d-sys-${id}" onchange="updateRegionList('${id}', 'd')">
                                     <option value="">-- System --</option>
-                                    ${systems.map(s => `<option value="${s}" ${initialData?.dSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                    ${Object.keys(systemMap).map(s => `<option value="${s}" ${initialData?.dSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
                                 </select>
                                 <select class="c-d-region" id="d-reg-${id}">
-                                    <option value="">-- Region --</option>
-                                    ${regions.map(r => `<option value="${r}" ${initialData?.dRegion === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                    <option value="">-- Select System First --</option>
                                 </select>
                             </div>
                             <div class="manifest-area" id="d-man-${id}"></div>
@@ -172,17 +174,44 @@
                     </div>
                 </div>
             </div>`;
+        
         document.getElementById('contract-list').insertAdjacentHTML('beforeend', html);
         
+        // Populate regions if initial data exists
+        if (initialData?.pSystem) updateRegionList(id, 'p', initialData.pRegion);
+        if (initialData?.dSystem) updateRegionList(id, 'd', initialData.dRegion);
+
         if (initialData?.pManifest) {
             initialData.pManifest.forEach((m, index) => {
-                const dLoc = initialData.dManifest ? initialData.dManifest[index]?.loc : '';
-                addManifestItem(id, true, m, dLoc);
+                addManifestItem(id, true, m, initialData.dManifest?.[index]?.loc || '');
             });
         }
     }
 
-    // Adaptive Logic: Updates Title datalist based on dropdown selections
+    /**
+     * Updates the Region dropdown based on the selected System
+     * @param {string} id - Card ID
+     * @param {string} type - 'p' for Pickup, 'd' for Destination
+     * @param {string} selectedRegion - Optional pre-selected value
+     */
+    function updateRegionList(id, type, selectedRegion = "") {
+        const sysVal = document.getElementById(`${type}-sys-${id}`).value;
+        const regSelect = document.getElementById(`${type}-reg-${id}`);
+        
+        regSelect.innerHTML = '<option value="">-- Region --</option>';
+        
+        if (systemMap[sysVal]) {
+            systemMap[sysVal].forEach(region => {
+                const opt = document.createElement('option');
+                opt.value = region;
+                opt.innerText = region;
+                if (region === selectedRegion) opt.selected = true;
+                regSelect.appendChild(opt);
+            });
+        }
+        updateAdaptiveSuggestions(id);
+    }
+
     function updateAdaptiveSuggestions(id) {
         const card = document.getElementById(`c-${id}`);
         const category = card.querySelector('.c-category').value;
