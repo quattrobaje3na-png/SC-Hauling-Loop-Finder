@@ -7,36 +7,28 @@
     <style>
         :root { --accent: #822; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; --border: #333; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
-        .ledger-container { max-width: 1200px; margin: 0 auto; }
+        .ledger-container { max-width: 1300px; margin: 0 auto; }
         .contract-block { background: var(--panel); padding: 25px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 40px; }
         .contract-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); margin-bottom: 20px; padding-bottom: 10px; }
-        
         h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin: 0 0 15px 0; font-size: 1rem; }
         .form-section { margin-bottom: 25px; padding: 15px; background: #151515; border-radius: 4px; }
-        
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
         .grid-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
-        
-        .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
         label { font-size: 0.7rem; margin-bottom: 5px; color: #888; text-transform: uppercase; }
         select, input { background: #222; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 2px; }
-        
         .manifest-item { display: grid; grid-template-columns: 1fr 120px 45px; gap: 10px; margin-bottom: 10px; }
         .zone-box { background: #111; padding: 15px; border: 1px solid #222; border-top: 3px solid var(--accent); }
         .pickup-box { border-top-color: #555; }
-
+        .local-manifest { margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; }
+        .manifest-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid #222; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px 24px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 10px; cursor: pointer; text-transform: uppercase; }
-        .remove-btn { background: transparent; color: #666; border: 1px solid #444; padding: 5px 10px; cursor: pointer; }
-        
         .global-actions { position: sticky; bottom: 20px; background: rgba(10,10,10,0.95); padding: 20px; border: 1px solid var(--accent); display: flex; gap: 15px; z-index: 100; border-radius: 4px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
-
 <div class="ledger-container" id="ledger"></div>
-
 <div class="global-actions">
     <button class="action-btn" onclick="addNewContract()">+ Add New Contract</button>
     <div style="flex-grow: 1;"></div>
@@ -52,8 +44,6 @@ const starCitizenData = {
         "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123"],
         "Lyria": ["Humboldt Mines", "Loveridge Mineral Reserve", "Shubin Mining Facility SAL-2", "Security Depot Lyria-1"],
         "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HDMS-Edmond", "HDMS-Oparei"],
-        "Crusader": ["Orison", "Seraphim Station", "CRU-L1", "CRU-L4", "CRU-L5"],
-        "Cellin": ["Gallete Family Farms", "Terra Mills HydroFarm", "Tram & Myers Mining", "Security Post Criska"],
         "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Security Post Moluto", "Security Post Prashad", "Security Post Thaquray", "Jump Town", "Brio's Breaker Yard", "Nuen Waste Management", "Whistlers Crypt", "Yadar Valley", "Dunlow Ridge Aid Shelter", "Eager Flats Aid Shelter", "Tamdon Plains Aid Shelter", "Wolf Point Aid Shelter"],
         "Yela": ["GrimHEX", "ArcCorp Mining Area 157", "Benson Mining Outpost", "Jumptown", "NT-999-XXII", "Security Post Wan"],
         "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "Ghost Hollow"]
@@ -62,7 +52,6 @@ const starCitizenData = {
         "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "Stanton Gateway"],
         "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station)"],
         "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)", "PYR3-L1 (Starlight)", "PYR3-L3 (Patch City)"],
-        "Pyro IV": ["Chawla's Beach", "Dinger's Depot", "Fallow Field", "Goner's Deal", "Sacren's Plot"],
         "Pyro V": ["PYR5-L1 (FARSTAT-5-1)", "PYR5-L2 (Gaslight)", "PYR5-L4 (Rod's Fuel)", "PYR5-L5 (Rat's Nest)"],
         "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "PYR6-L3 (Endgame)", "PYR6-L4 (Dudley & Daughters)", "PYR6-L5 (Megumi Refueling)"]
     },
@@ -80,77 +69,33 @@ function addNewContract(data = null) {
     block.innerHTML = `
         <div class="contract-header">
             <input type="text" id="title-${id}" maxlength="100" placeholder="Manifest Title (100 char limit)" style="width:70%; background:transparent; border:none; color:var(--accent); font-weight:bold; font-size:1.1rem;">
-            <button class="remove-btn" onclick="removeContract(${id})">Delete Contract</button>
+            <button class="remove-btn" onclick="this.parentElement.parentElement.remove()">Delete Contract</button>
         </div>
         
         <div class="form-section">
             <h3>Pickups</h3>
-            <div id="p-split-container-${id}" class="grid-split hidden">
-                <div class="zone-box pickup-box">
-                    <label>Pickup A</label>
-                    <div class="grid-3">
-                        <select id="p1-sys-${id}" onchange="updateLocs(${id}, 'p1')"></select>
-                        <select id="p1-reg-${id}" onchange="updateLocs(${id}, 'p1')"></select>
-                        <select id="p1-loc-${id}"></select>
-                    </div>
-                </div>
-                <div class="zone-box pickup-box">
-                    <label>Pickup B</label>
-                    <div class="grid-3">
-                        <select id="p2-sys-${id}" onchange="updateLocs(${id}, 'p2')"></select>
-                        <select id="p2-reg-${id}" onchange="updateLocs(${id}, 'p2')"></select>
-                        <select id="p2-loc-${id}"></select>
-                    </div>
-                </div>
+            <div id="p-single-${id}" class="zone-box pickup-box">
+                <div class="grid-3"><select id="ps-sys-${id}" onchange="updateLocs(${id}, 'ps')"></select><select id="ps-reg-${id}" onchange="updateLocs(${id}, 'ps')"></select><select id="ps-loc-${id}"></select></div>
+                <div id="ps-manifest-${id}" class="local-manifest"></div>
             </div>
-            <div id="p-single-container-${id}" class="zone-box pickup-box">
-                <div class="grid-3">
-                    <select id="ps-sys-${id}" onchange="updateLocs(${id}, 'ps')"></select>
-                    <select id="ps-reg-${id}" onchange="updateLocs(${id}, 'ps')"></select>
-                    <select id="ps-loc-${id}"></select>
-                </div>
-            </div>
-            <button class="secondary-btn" style="margin-top:10px;" onclick="toggleSplit(${id}, 'p')">Toggle Split Pickup</button>
         </div>
 
         <div class="form-section">
-            <h3>Commodity Manifest</h3>
+            <h3>Global Commodity Manifest</h3>
             <div id="comm-list-${id}"></div>
             <button class="secondary-btn" onclick="addComm(${id})">+ Add Item</button>
-            <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;">
-                <label>Total Combined SCU</label>
-                <input type="number" id="total-scu-${id}" value="0" readonly style="border:none; background:transparent; color:var(--accent); font-weight:bold; font-size:1.2rem;">
-            </div>
+            <div style="margin-top:10px; color:var(--accent); font-weight:bold;">Total SCU: <span id="total-scu-${id}">0</span></div>
         </div>
 
         <div class="form-section">
             <h3>Deliveries</h3>
             <div id="d-split-container-${id}" class="grid-split hidden">
-                <div class="zone-box">
-                    <label>Drop A</label>
-                    <div class="grid-3">
-                        <select id="d1-sys-${id}" onchange="updateLocs(${id}, 'd1')"></select>
-                        <select id="d1-reg-${id}" onchange="updateLocs(${id}, 'd1')"></select>
-                        <select id="d1-loc-${id}"></select>
-                    </div>
-                    <div id="d1-items-${id}" style="margin-top:10px;"></div>
-                </div>
-                <div class="zone-box">
-                    <label>Drop B</label>
-                    <div class="grid-3">
-                        <select id="d2-sys-${id}" onchange="updateLocs(${id}, 'd2')"></select>
-                        <select id="d2-reg-${id}" onchange="updateLocs(${id}, 'd2')"></select>
-                        <select id="d2-loc-${id}"></select>
-                    </div>
-                    <div id="d2-items-${id}" style="margin-top:10px;"></div>
-                </div>
+                <div class="zone-box"><label>Drop A</label><div class="grid-3"><select id="d1-sys-${id}" onchange="updateLocs(${id}, 'd1')"></select><select id="d1-reg-${id}" onchange="updateLocs(${id}, 'd1')"></select><select id="d1-loc-${id}"></select></div><div id="d1-manifest-${id}" class="local-manifest"></div></div>
+                <div class="zone-box"><label>Drop B</label><div class="grid-3"><select id="d2-sys-${id}" onchange="updateLocs(${id}, 'd2')"></select><select id="d2-reg-${id}" onchange="updateLocs(${id}, 'd2')"></select><select id="d2-loc-${id}"></select></div><div id="d2-manifest-${id}" class="local-manifest"></div></div>
             </div>
             <div id="d-single-container-${id}" class="zone-box">
-                <div class="grid-3">
-                    <select id="ds-sys-${id}" onchange="updateLocs(${id}, 'ds')"></select>
-                    <select id="ds-reg-${id}" onchange="updateLocs(${id}, 'ds')"></select>
-                    <select id="ds-loc-${id}"></select>
-                </div>
+                <div class="grid-3"><select id="ds-sys-${id}" onchange="updateLocs(${id}, 'ds')"></select><select id="ds-reg-${id}" onchange="updateLocs(${id}, 'ds')"></select><select id="ds-loc-${id}"></select></div>
+                <div id="ds-manifest-${id}" class="local-manifest"></div>
             </div>
             <button class="secondary-btn" style="margin-top:10px;" onclick="toggleSplit(${id}, 'd')">Toggle Split Delivery</button>
         </div>
@@ -161,7 +106,7 @@ function addNewContract(data = null) {
 }
 
 function initSelectors(id) {
-    ['ps', 'p1', 'p2', 'ds', 'd1', 'd2'].forEach(pre => {
+    ['ps', 'ds', 'd1', 'd2'].forEach(pre => {
         const sys = document.getElementById(`${pre}-sys-${id}`);
         Object.keys(starCitizenData).forEach(s => sys.add(new Option(s, s)));
         updateLocs(id, pre);
@@ -183,55 +128,52 @@ function updateLocs(id, pre) {
 function addComm(id, name = "", qty = "") {
     const div = document.createElement('div');
     div.className = 'manifest-item';
-    div.innerHTML = `<input type="text" value="${name}" placeholder="Item Name" oninput="sync(${id})"><input type="number" value="${qty}" placeholder="SCU Qty" oninput="calcTotal(${id})"><button class="remove-btn" onclick="this.parentElement.remove(); calcTotal(${id});">X</button>`;
+    div.innerHTML = `<input type="text" value="${name}" placeholder="Item Name" oninput="sync(${id})"><input type="number" value="${qty}" placeholder="SCU" oninput="sync(${id})"><button class="remove-btn" onclick="this.parentElement.remove(); sync(${id});">X</button>`;
     document.getElementById(`comm-list-${id}`).appendChild(div);
     sync(id);
 }
 
-function calcTotal(id) {
-    let t = 0;
-    document.querySelectorAll(`#contract-${id} input[type="number"]`).forEach(i => { if (i.placeholder === "SCU Qty") t += parseFloat(i.value) || 0; });
-    document.getElementById(`total-scu-${id}`).value = t;
-    sync(id);
-}
-
 function sync(id) {
+    let total = 0;
+    const items = Array.from(document.querySelectorAll(`#contract-${id} .manifest-item`)).map(i => {
+        const q = parseFloat(i.children[1].value) || 0;
+        total += q;
+        return { n: i.children[0].value || "Unnamed Item", q: q };
+    });
+    document.getElementById(`total-scu-${id}`).innerText = total;
+
     const isSplit = !document.getElementById(`d-split-container-${id}`).classList.contains('hidden');
-    const items = Array.from(document.querySelectorAll(`#contract-${id} .manifest-item`)).map(i => ({ n: i.children[0].value || "Item", q: parseFloat(i.children[1].value) || 0 }));
-    ['d1', 'd2'].forEach(pre => {
-        const c = document.getElementById(`${pre}-items-${id}`);
-        if(!c) return;
-        c.innerHTML = '';
-        items.forEach(item => { 
-            const val = isSplit ? (item.q / 2) : item.q; 
-            c.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; padding:4px; background:#222;"><span>${item.n}</span><span style="color:var(--accent); font-weight:bold;">${val} SCU</span></div>`; 
+    
+    // Update manifests for all active zones
+    const zones = isSplit ? ['ps', 'd1', 'd2'] : ['ps', 'ds'];
+    zones.forEach(pre => {
+        const container = document.getElementById(`${pre}-manifest-${id}`);
+        container.innerHTML = `<label style="color:#666">Items for this location:</label>`;
+        items.forEach(item => {
+            const displayQty = (pre === 'd1' || pre === 'd2') ? (item.q / 2) : item.q;
+            container.innerHTML += `<div class="manifest-row"><span>${item.n}</span><span style="color:var(--accent)">${displayQty} SCU</span></div>`;
         });
     });
 }
 
 function toggleSplit(id, type) {
-    const single = document.getElementById(`${type}-single-container-${id}`);
-    const split = document.getElementById(`${type}-split-container-${id}`);
-    single.classList.toggle('hidden');
-    split.classList.toggle('hidden');
+    document.getElementById(`d-single-container-${id}`).classList.toggle('hidden');
+    document.getElementById(`d-split-container-${id}`).classList.toggle('hidden');
     sync(id);
 }
-
-function removeContract(id) { document.getElementById(`contract-${id}`).remove(); }
 
 function exportLedger() {
     const data = Array.from(document.querySelectorAll('.contract-block')).map(b => {
         const id = b.id.split('-')[1];
         return {
             title: document.getElementById(`title-${id}`).value,
-            comms: Array.from(b.querySelectorAll('.manifest-item')).map(i => ({n: i.children[0].value, q: i.children[1].value})),
-            pickup: { sys: document.getElementById(`ps-sys-${id}`).value, reg: document.getElementById(`ps-reg-${id}`).value, loc: document.getElementById(`ps-loc-${id}`).value }
+            comms: Array.from(b.querySelectorAll('.manifest-item')).map(i => ({n: i.children[0].value, q: i.children[1].value}))
         };
     });
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `hauling_ledger_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `hauling_ledger.json`;
     a.click();
 }
 
@@ -247,7 +189,6 @@ function importLedger(event) {
             document.getElementById(`title-${id}`).value = c.title;
             document.getElementById(`comm-list-${id}`).innerHTML = '';
             c.comms.forEach(item => addComm(id, item.n, item.q));
-            calcTotal(id);
         });
     };
     reader.readAsText(event.target.files[0]);
