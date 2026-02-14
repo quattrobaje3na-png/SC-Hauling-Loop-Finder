@@ -22,17 +22,26 @@
 
         .contract-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 20px; position: relative; }
         .section-label { font-size: 0.75rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); display: block; }
+        
+        /* Fixed Alignment: Flex-start ensures both columns start at the same top line */
+        .card-main-row { display: flex; gap: 25px; align-items: flex-start; }
+        .column { flex: 1; display: flex; flex-direction: column; }
+
         .row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: flex-end; }
         .input-group { flex: 1; min-width: 180px; display: flex; flex-direction: column; }
         
         label { font-size: 0.75rem; color: #888; margin-bottom: 5px; }
-        input, select { background: var(--accent); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; font-size: 0.9rem; }
+        input, select { background: var(--accent); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
         
-        .manifest-area { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; margin-top: 10px; }
+        .manifest-area { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; margin-top: 10px; min-height: 40px; }
         .step-row { background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; display: flex; gap: 10px; border-left: 3px solid var(--primary); }
+        
         .btn { cursor: pointer; border: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-transform: uppercase; transition: 0.2s; }
         .btn-add { background: var(--primary); color: white; }
         .btn-delete { background: #aa0000; color: white; padding: 5px 10px; position: absolute; right: 15px; top: 15px; }
+        
+        /* Tiered Dropdowns Grid */
+        .tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; }
     </style>
 </head>
 <body>
@@ -111,24 +120,24 @@
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="input-group">
+                <div class="card-main-row">
+                    <div class="column">
                         <span class="section-label">Origin (Pickup)</span>
-                        <div class="row" style="margin-bottom:0">
+                        <div class="tier-grid">
                             <select class="c-p-system" id="p-sys-${id}" onchange="populateRegions('${id}', 'p')">${systemOptions}</select>
                             <select class="c-p-region" id="p-reg-${id}" onchange="populateZones('${id}', 'p')"><option value="">-- Region --</option></select>
-                            <select class="c-p-zone" id="p-zone-${id}"><option value="">-- Landing Zone --</option></select>
+                            <select class="c-p-zone" id="p-zone-${id}"><option value="">-- Zone --</option></select>
                         </div>
                         <div class="manifest-area" id="p-man-${id}"></div>
                         <button class="btn" style="font-size:0.7rem; margin-top:10px;" onclick="addManifestItem('${id}')">+ Add Cargo Slot</button>
                     </div>
 
-                    <div class="input-group">
+                    <div class="column">
                         <span class="section-label">Destination (Delivery)</span>
-                        <div class="row" style="margin-bottom:0">
+                        <div class="tier-grid">
                             <select class="c-d-system" id="d-sys-${id}" onchange="populateRegions('${id}', 'd')">${systemOptions}</select>
                             <select class="c-d-region" id="d-reg-${id}" onchange="populateZones('${id}', 'd')"><option value="">-- Region --</option></select>
-                            <select class="c-d-zone" id="d-zone-${id}"><option value="">-- Landing Zone --</option></select>
+                            <select class="c-d-zone" id="d-zone-${id}"><option value="">-- Zone --</option></select>
                         </div>
                         <div class="manifest-area" id="d-man-${id}"></div>
                     </div>
@@ -138,7 +147,6 @@
         document.getElementById('contract-list').insertAdjacentHTML('beforeend', html);
 
         if (initialData) {
-            // Logic to reload tiers for imported data
             const loadTier = (type) => {
                 const sys = initialData[`${type}System`];
                 const reg = initialData[`${type}Region`];
@@ -160,10 +168,8 @@
         const sysVal = document.getElementById(`${type}-sys-${id}`).value;
         const regSelect = document.getElementById(`${type}-reg-${id}`);
         const zoneSelect = document.getElementById(`${type}-zone-${id}`);
-        
         regSelect.innerHTML = '<option value="">-- Region --</option>';
-        zoneSelect.innerHTML = '<option value="">-- Landing Zone --</option>';
-
+        zoneSelect.innerHTML = '<option value="">-- Zone --</option>';
         if (systemMap[sysVal]) {
             Object.keys(systemMap[sysVal]).forEach(reg => {
                 const opt = document.createElement('option');
@@ -178,9 +184,7 @@
         const sysVal = document.getElementById(`${type}-sys-${id}`).value;
         const regVal = document.getElementById(`${type}-reg-${id}`).value;
         const zoneSelect = document.getElementById(`${type}-zone-${id}`);
-
-        zoneSelect.innerHTML = '<option value="">-- Landing Zone --</option>';
-
+        zoneSelect.innerHTML = '<option value="">-- Zone --</option>';
         if (systemMap[sysVal] && systemMap[sysVal][regVal]) {
             systemMap[sysVal][regVal].forEach(zone => {
                 const opt = document.createElement('option');
@@ -194,17 +198,14 @@
     function addManifestItem(contractId, itemData = null) {
         const index = document.querySelectorAll(`#p-man-${contractId} .step-row`).length;
         const syncId = `sync-${contractId}-${index}`;
-
         const phtml = `<div class="step-row" id="p-${syncId}">
             <input type="text" class="m-item" placeholder="Commodity" value="${itemData?.item || ''}" oninput="syncData('${syncId}')">
             <input type="number" class="m-scu" placeholder="SCU" value="${itemData?.scu || ''}" style="width:70px" oninput="syncData('${syncId}')">
         </div>`;
         document.getElementById(`p-man-${contractId}`).insertAdjacentHTML('beforeend', phtml);
-
         const dhtml = `<div class="step-row" id="d-${syncId}">
             <input type="text" id="sync-item-${syncId}" value="${itemData?.item || ''}" readonly style="opacity:0.6; flex:1;">
-            <input type="number" id="sync-scu-${syncId}" value="${itemData?.scu || ''}" readonly style="opacity:0.6; width:60px;">
-            <input type="text" class="m-final-loc" value="${itemData?.finalLoc || ''}" style="flex:1.5; border: 1px solid var(--primary);" placeholder="Hangar/Pad Slot">
+            <input type="number" id="sync-scu-${syncId}" value="${itemData?.scu || ''}" readonly style="opacity:0.6; width:80px;">
         </div>`;
         document.getElementById(`d-man-${contractId}`).insertAdjacentHTML('beforeend', dhtml);
     }
@@ -246,8 +247,7 @@
                 dRegion: card.querySelector('.c-d-region').value,
                 dZone: card.querySelector('.c-d-zone').value,
                 manifest: Array.from(card.querySelectorAll(`#p-man-${id} .step-row`)).map((row, i) => {
-                    const dRow = document.querySelectorAll(`#d-man-${id} .step-row`)[i];
-                    return { item: row.querySelector('.m-item').value, scu: row.querySelector('.m-scu').value, finalLoc: dRow.querySelector('.m-final-loc').value };
+                    return { item: row.querySelector('.m-item').value, scu: row.querySelector('.m-scu').value };
                 })
             });
         });
