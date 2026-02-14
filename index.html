@@ -97,7 +97,8 @@
 
 <script>
     let globalContractData = [];
-    let titleWordLibrary = new Set(["Bulk", "Haul", "Cargo", "Covalex", "Red", "Wind"]);
+    // Library seeded with common terms; will be expanded by JSON import
+    let titleWordLibrary = new Set(["Bulk", "Haul", "Cargo", "Covalex", "Red", "Wind", "Small", "Medium", "Large", "Alliance", "Distribution", "Independent"]);
 
     function addContract(initialData = null) {
         const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -111,11 +112,12 @@
                 
                 <div class="row">
                     <div class="input-group" style="flex:2">
-                        <label>Contract Title (Word Prediction)</label>
+                        <label>Contract Title (Word-by-Word Prediction)</label>
                         <input type="text" class="c-name" 
                                list="dynamic-title-words" 
                                maxlength="100"
                                oninput="handleTitlePrediction(this)"
+                               placeholder="e.g. Bulk Haul..."
                                value="${initialData?.name || ''}">
                     </div>
                 </div>
@@ -163,17 +165,25 @@
         }
     }
 
+    // FIXED PREDICTION LOGIC
     function handleTitlePrediction(input) {
         const val = input.value;
-        const words = val.split(/\s+/);
-        const currentWord = words[words.length - 1].toLowerCase();
         const datalist = document.getElementById('dynamic-title-words');
+        
+        // Split by spaces, but keep track of trailing space
+        const words = val.split(" ");
+        const lastWord = words[words.length - 1].toLowerCase();
+        const prefix = words.slice(0, -1).join(" ");
+
         datalist.innerHTML = ''; 
 
-        if (currentWord.length > 0) {
-            Array.from(titleWordLibrary).filter(w => w.toLowerCase().startsWith(currentWord))
-            .forEach(match => {
-                const prefix = words.slice(0, -1).join(" ");
+        if (lastWord.length > 0 || val.endsWith(" ")) {
+            // Find words that match the current typing
+            const matches = Array.from(titleWordLibrary).filter(w => 
+                w.toLowerCase().startsWith(lastWord)
+            );
+
+            matches.forEach(match => {
                 const suggestion = (prefix ? prefix + " " : "") + match;
                 const option = document.createElement('option');
                 option.value = suggestion;
@@ -234,6 +244,7 @@
         const regionSet = new Set();
 
         globalContractData.forEach(c => {
+            // Seed library with words from previous contract names
             c.name.split(/\s+/).forEach(word => {
                 if(word.length > 2) titleWordLibrary.add(word.replace(/[^a-zA-Z]/g, ""));
             });
@@ -290,9 +301,7 @@
                 }))
             });
         });
-        const nameSet = new Set(screenContracts.map(c => c.name));
-        const merged = [...screenContracts, ...globalContractData.filter(c => !nameSet.has(c.name))];
-        const blob = new Blob([JSON.stringify(merged, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(screenContracts, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `hauling_master_db.json`;
