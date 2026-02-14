@@ -3,69 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">CMDR Quattro Logistics Tracker</title>
+    <title>CMDR Quattro Logistics Tracker</title>
     <style>
-        /* Restored original style as requested */
-        body { font-family: sans-serif; }
-        .container { padding: 20px; }
-        .input-group { margin-bottom: 15px; }
-        select, input { padding: 8px; margin-right: 10px; }
-        .delivery-zone { border: 1px solid #ccc; padding: 15px; margin-top: 10px; background: #f9f9f9; }
+        :root { --accent: #822; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; --border: #333; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
+        .form-container { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid var(--border); border-radius: 4px; }
+        
+        h2, h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; border-bottom: 1px solid var(--accent); padding-bottom: 5px; }
+        
+        .form-section { margin-bottom: 25px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        
+        label { font-size: 0.75rem; margin-bottom: 5px; color: #aaa; text-transform: uppercase; }
+        select, input { background: #222; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 2px; }
+        select:focus, input:focus { border-color: var(--accent); outline: none; }
+
+        .delivery-zone { background: #111; padding: 20px; border-left: 4px solid var(--accent); margin-bottom: 15px; }
+        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        .split-btn { background: var(--accent); color: white; border: none; padding: 12px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; margin-top: 10px; }
+        .split-btn:hover { background: #a33; }
+        
+        .remove-btn { background: transparent; color: #666; border: 1px solid #444; padding: 4px 8px; cursor: pointer; font-size: 0.7rem; }
+        .remove-btn:hover { color: white; border-color: var(--accent); }
+
+        .scu-meta { display: flex; align-items: center; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
+        .scu-meta input { width: 120px; font-size: 1.1rem; color: var(--accent); font-weight: bold; }
+        
         .hidden { display: none; }
-        .btn { padding: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1 id="header-title">Logistics Management</h1>
-
-    <div class="input-group">
-        <label>Manifest Title (Max 100 chars):</label>
-        <input type="text" id="manifest-title" maxlength="100" style="width: 300px;" placeholder="Enter mission title...">
+<div class="form-container">
+    <h2>Hauling Manifest</h2>
+    
+    <div class="form-section">
+        <div class="input-group">
+            <label>Manifest Title (100 Character Limit)</label>
+            <input type="text" id="manifest-title" maxlength="100" placeholder="e.g., Pyro II Ammo & Meds Split Run">
+        </div>
     </div>
 
     <div class="form-section">
-        <h3>Pickup Point</h3>
-        <select id="p-system" onchange="updateRegions('p')"></select>
-        <select id="p-region" onchange="updateLocations('p')"></select>
-        <select id="p-location"></select>
-        <input type="number" id="total-scu" value="64" oninput="calculateSplits()" placeholder="Total SCU">
+        <h3>Primary Pickup</h3>
+        <div class="input-row">
+            <div class="input-group">
+                <label>System</label>
+                <select id="p-system" onchange="updateRegions('p')"></select>
+            </div>
+            <div class="input-group">
+                <label>Region/Planet</label>
+                <select id="p-region" onchange="updateLocations('p')"></select>
+            </div>
+            <div class="input-group">
+                <label>Landing Zone</label>
+                <select id="p-location"></select>
+            </div>
+        </div>
+        <div class="input-group" style="max-width: 200px;">
+            <label>Total SCU Cargo</label>
+            <input type="number" id="total-scu" value="64" oninput="calculateSplits()">
+        </div>
     </div>
 
-    <hr>
-
-    <div id="delivery-container">
+    <div class="form-section">
         <h3>Delivery Destinations</h3>
         
         <div class="delivery-zone" id="zone-1">
-            <strong>Destination A</strong><br><br>
-            <select id="d1-system" onchange="updateRegions('d1')"></select>
-            <select id="d1-region" onchange="updateLocations('d1')"></select>
-            <select id="d1-location"></select>
-            <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
+            <div class="zone-header"><span>DROP POINT A</span></div>
+            <div class="input-row">
+                <div class="input-group"><label>System</label><select id="d1-system" onchange="updateRegions('d1')"></select></div>
+                <div class="input-group"><label>Region</label><select id="d1-region" onchange="updateLocations('d1')"></select></div>
+                <div class="input-group"><label>Location</label><select id="d1-location"></select></div>
+            </div>
+            <div class="scu-meta">
+                <label>Allocation:</label>
+                <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
+            </div>
         </div>
 
-        <div style="margin-top:10px;">
-            <button class="btn" id="split-btn" onclick="toggleSplit()">+ Add Split Delivery</button>
-        </div>
+        <button type="button" class="split-btn" id="split-trigger" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
 
         <div class="delivery-zone hidden" id="zone-2">
-            <strong>Destination B</strong> 
-            <button onclick="toggleSplit()" style="float:right; color:red;">Remove</button><br><br>
-            <select id="d2-system" onchange="updateRegions('d2')"></select>
-            <select id="d2-region" onchange="updateLocations('d2')"></select>
-            <select id="d2-location"></select>
-            <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
+            <div class="zone-header">
+                <span>DROP POINT B</span>
+                <button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button>
+            </div>
+            <div class="input-row">
+                <div class="input-group"><label>System</label><select id="d2-system" onchange="updateRegions('d2')"></select></div>
+                <div class="input-group"><label>Region</label><select id="d2-region" onchange="updateLocations('d2')"></select></div>
+                <div class="input-group"><label>Location</label><select id="d2-location"></select></div>
+            </div>
+            <div class="scu-meta">
+                <label>Allocation:</label>
+                <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
+            </div>
         </div>
     </div>
 
-    <br>
-    <button class="btn" onclick="exportJSON()">Export JSON Manifest</button>
+    <button class="split-btn" style="background:#333;" onclick="exportManifest()">Generate JSON Manifest</button>
 </div>
 
 <script>
-// JSON Locations Data from previous merges
+// Consolidated Data for Stanton, Pyro, and Nyx
 const starCitizenData = {
     "Stanton": {
         "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2", "ARC-L3", "ARC-L4", "ARC-L5"],
@@ -120,7 +162,7 @@ function updateLocations(pre) {
 function toggleSplit() {
     splitActive = !splitActive;
     document.getElementById('zone-2').classList.toggle('hidden');
-    document.getElementById('split-btn').classList.toggle('hidden');
+    document.getElementById('split-trigger').classList.toggle('hidden');
     calculateSplits();
 }
 
@@ -146,20 +188,24 @@ function manualSplit(origin) {
     }
 }
 
-function exportJSON() {
+function exportManifest() {
+    const title = document.getElementById('manifest-title').value.substring(0, 100);
     const manifest = {
-        title: document.getElementById('manifest-title').value.substring(0, 100),
-        pickup: document.getElementById('p-location').value,
-        total_scu: document.getElementById('total-scu').value,
+        title: title,
+        pickup: {
+            system: document.getElementById('p-system').value,
+            location: document.getElementById('p-location').value,
+            scu: document.getElementById('total-scu').value
+        },
         destinations: [
-            { loc: document.getElementById('d1-location').value, scu: document.getElementById('scu-1').value }
+            { location: document.getElementById('d1-location').value, scu: document.getElementById('scu-1').value }
         ]
     };
     if (splitActive) {
-        manifest.destinations.push({ loc: document.getElementById('d2-location').value, scu: document.getElementById('scu-2').value });
+        manifest.destinations.push({ location: document.getElementById('d2-location').value, scu: document.getElementById('scu-2').value });
     }
-    console.log(JSON.stringify(manifest, null, 2));
-    alert("Manifest logged to console!");
+    console.log("GENERATED MANIFEST:", JSON.stringify(manifest, null, 2));
+    alert("Manifest logged to console for title: " + title);
 }
 
 window.onload = init;
