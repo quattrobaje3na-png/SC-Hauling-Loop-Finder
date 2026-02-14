@@ -7,31 +7,24 @@
     <style>
         :root { --accent: #822; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; --border: #333; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
-        .form-container { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid var(--border); border-radius: 4px; }
-        
+        .form-container { max-width: 1000px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid var(--border); border-radius: 4px; }
         h2, h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; border-bottom: 1px solid var(--accent); padding-bottom: 5px; }
-        
         .form-section { margin-bottom: 25px; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .input-group { display: flex; flex-direction: column; }
-        
         label { font-size: 0.75rem; margin-bottom: 5px; color: #aaa; text-transform: uppercase; }
         select, input { background: #222; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 2px; }
         select:focus, input:focus { border-color: var(--accent); outline: none; }
-
+        .manifest-item { display: grid; grid-template-columns: 2fr 1fr 40px; gap: 10px; margin-bottom: 10px; align-items: center; }
         .delivery-zone { background: #111; padding: 20px; border-left: 4px solid var(--accent); margin-bottom: 15px; }
         .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
-        .split-btn { background: var(--accent); color: white; border: none; padding: 12px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; margin-top: 10px; }
-        .split-btn:hover { background: #a33; }
-        
+        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .action-btn:hover { background: #a33; }
+        .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 12px; cursor: pointer; text-transform: uppercase; font-weight: bold; }
         .remove-btn { background: transparent; color: #666; border: 1px solid #444; padding: 4px 8px; cursor: pointer; font-size: 0.7rem; }
         .remove-btn:hover { color: white; border-color: var(--accent); }
-
-        .scu-meta { display: flex; align-items: center; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
-        .scu-meta input { width: 120px; font-size: 1.1rem; color: var(--accent); font-weight: bold; }
-        
         .hidden { display: none; }
+        #import-input { display: none; }
     </style>
 </head>
 <body>
@@ -49,28 +42,29 @@
     <div class="form-section">
         <h3>Primary Pickup</h3>
         <div class="input-row">
-            <div class="input-group">
-                <label>System</label>
-                <select id="p-system" onchange="updateRegions('p')"></select>
-            </div>
-            <div class="input-group">
-                <label>Region/Planet</label>
-                <select id="p-region" onchange="updateLocations('p')"></select>
-            </div>
-            <div class="input-group">
-                <label>Landing Zone</label>
-                <select id="p-location"></select>
+            <div class="input-group"><label>System</label><select id="p-system" onchange="updateRegions('p')"></select></div>
+            <div class="input-group"><label>Region/Planet</label><select id="p-region" onchange="updateLocations('p')"></select></div>
+            <div class="input-group"><label>Landing Zone</label><select id="p-location"></select></div>
+        </div>
+        
+        <label>Commodity Manifest</label>
+        <div id="manifest-list">
+            <div class="manifest-item">
+                <input type="text" class="comm-name" placeholder="Item Name (e.g. Ship Ammunition)" oninput="syncToDrops()">
+                <input type="number" class="comm-qty" placeholder="Total SCU" oninput="calculateTotalSCU()">
+                <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU();">X</button>
             </div>
         </div>
-        <div class="input-group" style="max-width: 200px;">
-            <label>Total SCU Cargo</label>
-            <input type="number" id="total-scu" value="64" oninput="calculateSplits()">
+        <button type="button" class="secondary-btn" style="padding: 5px 15px; font-size: 0.7rem; margin-top: 5px;" onclick="addCommodity()">+ Add Item</button>
+        
+        <div class="input-group" style="max-width: 200px; margin-top: 15px;">
+            <label>Total Combined SCU</label>
+            <input type="number" id="total-scu" value="0" readonly style="color: var(--accent); font-weight: bold;">
         </div>
     </div>
 
     <div class="form-section">
         <h3>Delivery Destinations</h3>
-        
         <div class="delivery-zone" id="zone-1">
             <div class="zone-header"><span>DROP POINT A</span></div>
             <div class="input-row">
@@ -78,36 +72,30 @@
                 <div class="input-group"><label>Region</label><select id="d1-region" onchange="updateLocations('d1')"></select></div>
                 <div class="input-group"><label>Location</label><select id="d1-location"></select></div>
             </div>
-            <div class="scu-meta">
-                <label>Allocation:</label>
-                <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
-            </div>
+            <div id="d1-items"></div>
         </div>
 
-        <button type="button" class="split-btn" id="split-trigger" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
+        <button type="button" class="action-btn" id="split-trigger" style="width: 100%;" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
 
         <div class="delivery-zone hidden" id="zone-2">
-            <div class="zone-header">
-                <span>DROP POINT B</span>
-                <button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button>
-            </div>
+            <div class="zone-header"><span>DROP POINT B</span><button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button></div>
             <div class="input-row">
                 <div class="input-group"><label>System</label><select id="d2-system" onchange="updateRegions('d2')"></select></div>
                 <div class="input-group"><label>Region</label><select id="d2-region" onchange="updateLocations('d2')"></select></div>
                 <div class="input-group"><label>Location</label><select id="d2-location"></select></div>
             </div>
-            <div class="scu-meta">
-                <label>Allocation:</label>
-                <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
-            </div>
+            <div id="d2-items"></div>
         </div>
     </div>
 
-    <button class="split-btn" style="background:#333;" onclick="exportManifest()">Generate JSON Manifest</button>
+    <div style="display: flex; gap: 10px;">
+        <input type="file" id="import-input" accept=".json" onchange="importJSON(event)">
+        <button class="secondary-btn" style="flex:1" onclick="document.getElementById('import-input').click()">Import JSON</button>
+        <button class="action-btn" style="flex:1" onclick="exportJSON()">Export Manifest</button>
+    </div>
 </div>
 
 <script>
-// Consolidated Data for Stanton, Pyro, and Nyx
 const starCitizenData = {
     "Stanton": {
         "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2", "ARC-L3", "ARC-L4", "ARC-L5"],
@@ -140,7 +128,7 @@ function init() {
         Object.keys(starCitizenData).forEach(s => sysSel.add(new Option(s, s)));
         updateRegions(pre);
     });
-    calculateSplits();
+    syncToDrops();
 }
 
 function updateRegions(pre) {
@@ -159,53 +147,84 @@ function updateLocations(pre) {
     starCitizenData[sys][reg].forEach(l => locSel.add(new Option(l, l)));
 }
 
+function addCommodity() {
+    const container = document.getElementById('manifest-list');
+    const div = document.createElement('div');
+    div.className = 'manifest-item';
+    div.innerHTML = `<input type="text" class="comm-name" placeholder="Item Name" oninput="syncToDrops()">
+                     <input type="number" class="comm-qty" placeholder="Total SCU" oninput="calculateTotalSCU()">
+                     <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU(); syncToDrops();">X</button>`;
+    container.appendChild(div);
+}
+
+function calculateTotalSCU() {
+    let total = 0;
+    document.querySelectorAll('.comm-qty').forEach(input => total += parseFloat(input.value) || 0);
+    document.getElementById('total-scu').value = total;
+    syncToDrops();
+}
+
+function syncToDrops() {
+    const commodities = Array.from(document.querySelectorAll('.manifest-item')).map(item => ({
+        name: item.querySelector('.comm-name').value || "Unnamed Item",
+        qty: parseFloat(item.querySelector('.comm-qty').value) || 0
+    }));
+
+    ['d1', 'd2'].forEach(pre => {
+        const container = document.getElementById(`${pre}-items`);
+        container.innerHTML = '';
+        commodities.forEach((c, idx) => {
+            const val = splitActive ? (c.qty / 2) : c.qty;
+            container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.8rem;">
+                <span>${c.name}</span>
+                <input type="number" class="${pre}-scu-split" data-idx="${idx}" value="${val}" style="width:60px; height:20px;">
+            </div>`;
+        });
+    });
+}
+
 function toggleSplit() {
     splitActive = !splitActive;
     document.getElementById('zone-2').classList.toggle('hidden');
     document.getElementById('split-trigger').classList.toggle('hidden');
-    calculateSplits();
+    syncToDrops();
 }
 
-function calculateSplits() {
-    const total = parseFloat(document.getElementById('total-scu').value) || 0;
-    if (splitActive) {
-        document.getElementById('scu-1').value = total / 2;
-        document.getElementById('scu-2').value = total / 2;
-    } else {
-        document.getElementById('scu-1').value = total;
-    }
-}
-
-function manualSplit(origin) {
-    const total = parseFloat(document.getElementById('total-scu').value) || 0;
-    if (!splitActive) return;
-    if (origin === 1) {
-        const v1 = parseFloat(document.getElementById('scu-1').value) || 0;
-        document.getElementById('scu-2').value = Math.max(0, total - v1);
-    } else {
-        const v2 = parseFloat(document.getElementById('scu-2').value) || 0;
-        document.getElementById('scu-1').value = Math.max(0, total - v2);
-    }
-}
-
-function exportManifest() {
-    const title = document.getElementById('manifest-title').value.substring(0, 100);
+function exportJSON() {
     const manifest = {
-        title: title,
-        pickup: {
-            system: document.getElementById('p-system').value,
-            location: document.getElementById('p-location').value,
-            scu: document.getElementById('total-scu').value
-        },
-        destinations: [
-            { location: document.getElementById('d1-location').value, scu: document.getElementById('scu-1').value }
-        ]
+        title: document.getElementById('manifest-title').value.substring(0, 100),
+        pickup: { loc: document.getElementById('p-location').value },
+        commodities: Array.from(document.querySelectorAll('.manifest-item')).map(i => ({
+            item: i.querySelector('.comm-name').value,
+            total: i.querySelector('.comm-qty').value
+        })),
+        dropA: document.getElementById('d1-location').value,
+        dropB: splitActive ? document.getElementById('d2-location').value : null
     };
-    if (splitActive) {
-        manifest.destinations.push({ location: document.getElementById('d2-location').value, scu: document.getElementById('scu-2').value });
-    }
-    console.log("GENERATED MANIFEST:", JSON.stringify(manifest, null, 2));
-    alert("Manifest logged to console for title: " + title);
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${manifest.title || 'manifest'}.json`; a.click();
+}
+
+function importJSON(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = JSON.parse(e.target.result);
+        document.getElementById('manifest-title').value = data.title;
+        const list = document.getElementById('manifest-list');
+        list.innerHTML = '';
+        data.commodities.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'manifest-item';
+            div.innerHTML = `<input type="text" class="comm-name" value="${c.item}" oninput="syncToDrops()">
+                             <input type="number" class="comm-qty" value="${c.total}" oninput="calculateTotalSCU()">
+                             <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU(); syncToDrops();">X</button>`;
+            list.appendChild(div);
+        });
+        calculateTotalSCU();
+    };
+    reader.readAsText(event.target.files[0]);
 }
 
 window.onload = init;
