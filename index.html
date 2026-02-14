@@ -1,269 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCS Hauling: Modular Predictive Ledger</title>
-    <style>
-        :root {
-            --primary: #ff4d4d;
-            --bg: #0d0d0d;
-            --card: #1a1a1a;
-            --text: #e0e0e0;
-            --border: #333;
-            --accent: #2a2a2a;
-        }
+<div class="form-section">
+    <h3>Pickup Information</h3>
+    <div class="input-group">
+        <label for="pickup-location">Pickup Location (e.g., ArcCorp Mining Area 048)</label>
+        <select id="pickup-location" class="location-select"></select>
+    </div>
+    <div class="input-group">
+        <label for="total-scu">Total SCU Cargo</label>
+        <input type="number" id="total-scu" placeholder="e.g., 64" oninput="updateSplits()">
+    </div>
+</div>
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header { border-bottom: 2px solid var(--primary); margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .toolbar { background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border); position: sticky; top: 10px; z-index: 100; }
-
-        .contract-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 20px; position: relative; }
-        .section-label { font-size: 0.75rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); display: block; }
-        
-        .card-main-row { display: flex; gap: 25px; align-items: flex-start; }
-        .column { flex: 1; display: flex; flex-direction: column; }
-
-        .row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: flex-end; }
-        .input-group { flex: 1; min-width: 180px; display: flex; flex-direction: column; }
-        
-        label { font-size: 0.75rem; color: #888; margin-bottom: 5px; }
-        input, select { background: var(--accent); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
-        
-        .manifest-area { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; margin-top: 10px; min-height: 40px; }
-        .step-row { background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; display: flex; gap: 10px; border-left: 3px solid var(--primary); }
-        
-        .btn { cursor: pointer; border: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-transform: uppercase; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; }
-        .btn-delete { background: #aa0000; color: white; padding: 5px 10px; position: absolute; right: 15px; top: 15px; }
-        
-        .tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; }
-    </style>
-</head>
-<body>
-
-<datalist id="dynamic-title-words"></datalist>
-
-<div class="container">
-    <header>
-        <h1>STAR CITIZEN: MODULAR OPS LEDGER</h1>
-        <div>STATUS: <span id="loc-status" style="color: var(--primary)">Syncing Root...</span></div>
-    </header>
-
-    <div class="toolbar">
-        <button class="btn" style="background:#2e7d32; color:white;" onclick="exportToJson()">Export Ledger</button>
-        <button class="btn" style="background:#1565c0; color:white;" onclick="document.getElementById('import-db').click()">Import Ledger</button>
-        <input type="file" id="import-db" style="display:none" onchange="importDatabase(event)">
+<div class="form-section" id="delivery-container">
+    <h3>Delivery Destinations</h3>
+    
+    <div class="delivery-zone" id="zone-1">
+        <div class="zone-header">
+            <span>Destination 1</span>
+        </div>
+        <select class="location-select" id="dest-1"></select>
+        <div class="scu-input-wrap">
+            <input type="number" class="scu-split" id="scu-1" placeholder="SCU" oninput="syncSplits(1)">
+            <span class="unit">SCU</span>
+        </div>
     </div>
 
-    <div id="contract-list"></div>
-    <button class="btn btn-add" style="width:100%" onclick="addContract()">+ NEW ENTRY</button>
+    <button type="button" id="add-zone-btn" onclick="toggleSecondZone()">+ Add Split Delivery</button>
+
+    <div class="delivery-zone" id="zone-2" style="display: none;">
+        <div class="zone-header">
+            <span>Destination 2</span>
+            <button type="button" class="remove-btn" onclick="toggleSecondZone()">Remove</button>
+        </div>
+        <select class="location-select" id="dest-2"></select>
+        <div class="scu-input-wrap">
+            <input type="number" class="scu-split" id="scu-2" placeholder="SCU" oninput="syncSplits(2)">
+            <span class="unit">SCU</span>
+        </div>
+    </div>
 </div>
 
 <script>
-    let globalContractData = [];
-    let titleWordLibrary = new Set();
-    let systemMap = {}; 
+    let splitActive = false;
 
-    const categories = ["Hauling", "Hauling - Interstellar", "Priority"];
-
-    window.onload = async () => {
-        try {
-            const [locRes, titleRes] = await Promise.all([
-                fetch('locations.json'),
-                fetch('title.json')
-            ]);
-            if (locRes.ok) {
-                systemMap = await locRes.json();
-                document.getElementById('loc-status').innerText = "3-Tier Map Active";
-                document.getElementById('loc-status').style.color = "#2e7d32";
-            }
-            if (titleRes.ok) {
-                const titleData = await titleRes.json();
-                if (titleData.contract_terms) {
-                    titleData.contract_terms.forEach(word => titleWordLibrary.add(word));
-                }
-            }
-        } catch (err) {
-            document.getElementById('loc-status').innerText = "Fetch Error";
-        }
-    };
-
-    function addContract(initialData = null) {
-        const id = Date.now() + Math.floor(Math.random() * 1000);
-        const systems = Object.keys(systemMap);
-        const systemOptions = systems.length > 0 ? 
-            `<option value="">-- System --</option>` + systems.map(s => `<option value="${s}">${s}</option>`).join('') :
-            `<option value="">No Map Loaded</option>`;
-
-        const html = `
-            <div class="contract-card" id="c-${id}" data-id="${id}">
-                <button class="btn btn-delete" onclick="document.getElementById('c-${id}').remove()">×</button>
-                <div class="row">
-                    <div class="input-group" style="flex:2">
-                        <label>Contract Title</label>
-                        <input type="text" class="c-name" list="dynamic-title-words" oninput="handleTitlePrediction(this, '${id}')" value="${initialData?.name || ''}">
-                    </div>
-                    <div class="input-group">
-                        <label>Category</label>
-                        <select class="c-category">
-                            ${categories.map(c => `<option value="${c}" ${initialData?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Payout (aUEC)</label>
-                        <input type="text" class="c-payout" value="${initialData?.payout || ''}">
-                    </div>
-                </div>
-
-                <div class="card-main-row">
-                    <div class="column">
-                        <span class="section-label">Origin (Pickup)</span>
-                        <div class="tier-grid">
-                            <select class="c-p-system" id="p-sys-${id}" onchange="populateRegions('${id}', 'p')">${systemOptions}</select>
-                            <select class="c-p-region" id="p-reg-${id}" onchange="populateZones('${id}', 'p')"><option value="">-- Region --</option></select>
-                            <select class="c-p-zone" id="p-zone-${id}"><option value="">-- Zone --</option></select>
-                        </div>
-                        <div class="manifest-area" id="p-man-${id}"></div>
-                        <button class="btn" style="font-size:0.7rem; margin-top:10px;" onclick="addManifestItem('${id}')">+ Add Cargo Slot</button>
-                    </div>
-
-                    <div class="column">
-                        <span class="section-label">Destination (Delivery)</span>
-                        <div class="tier-grid">
-                            <select class="c-d-system" id="d-sys-${id}" onchange="populateRegions('${id}', 'd')">${systemOptions}</select>
-                            <select class="c-d-region" id="d-reg-${id}" onchange="populateZones('${id}', 'd')"><option value="">-- Region --</option></select>
-                            <select class="c-d-zone" id="d-zone-${id}"><option value="">-- Zone --</option></select>
-                        </div>
-                        <div class="manifest-area" id="d-man-${id}"></div>
-                    </div>
-                </div>
-            </div>`;
+    function toggleSecondZone() {
+        const zone2 = document.getElementById('zone-2');
+        const btn = document.getElementById('add-zone-btn');
+        splitActive = !splitActive;
         
-        document.getElementById('contract-list').insertAdjacentHTML('beforeend', html);
-
-        if (initialData) {
-            const loadTier = (type) => {
-                const sys = initialData[`${type}System`];
-                const reg = initialData[`${type}Region`];
-                const zone = initialData[`${type}Zone`];
-                if (sys) {
-                    const sysEl = document.getElementById(`${type}-sys-${id}`);
-                    sysEl.value = sys;
-                    populateRegions(id, type);
-                    
-                    const regEl = document.getElementById(`${type}-reg-${id}`);
-                    regEl.value = reg;
-                    populateZones(id, type);
-                    
-                    const zoneEl = document.getElementById(`${type}-zone-${id}`);
-                    zoneEl.value = zone;
-                }
-            };
-            loadTier('p'); loadTier('d');
-            initialData.manifest?.forEach(item => addManifestItem(id, item));
-        }
-    }
-
-    function populateRegions(id, type) {
-        const sysVal = document.getElementById(`${type}-sys-${id}`).value;
-        const regSelect = document.getElementById(`${type}-reg-${id}`);
-        const zoneSelect = document.getElementById(`${type}-zone-${id}`);
+        zone2.style.display = splitActive ? 'block' : 'none';
+        btn.style.display = splitActive ? 'none' : 'block';
         
-        regSelect.innerHTML = '<option value="">-- Region --</option>';
-        zoneSelect.innerHTML = '<option value="">-- Zone --</option>';
+        if (splitActive) updateSplits(); // Auto-calculate 50/50 split on open
+    }
 
-        if (sysVal && systemMap[sysVal]) {
-            Object.keys(systemMap[sysVal]).forEach(reg => {
-                const opt = document.createElement('option');
-                opt.value = reg; 
-                opt.innerText = reg;
-                regSelect.appendChild(opt);
-            });
+    function updateSplits() {
+        const total = parseFloat(document.getElementById('total-scu').value) || 0;
+        if (splitActive) {
+            document.getElementById('scu-1').value = total / 2;
+            document.getElementById('scu-2').value = total / 2;
+        } else {
+            document.getElementById('scu-1').value = total;
         }
     }
 
-    function populateZones(id, type) {
-        const sysVal = document.getElementById(`${type}-sys-${id}`).value;
-        const regVal = document.getElementById(`${type}-reg-${id}`).value;
-        const zoneSelect = document.getElementById(`${type}-zone-${id}`);
-        
-        zoneSelect.innerHTML = '<option value="">-- Zone --</option>';
+    function syncSplits(changedSource) {
+        const total = parseFloat(document.getElementById('total-scu').value) || 0;
+        if (!splitActive) return;
 
-        if (sysVal && regVal && systemMap[sysVal][regVal]) {
-            systemMap[sysVal][regVal].forEach(zone => {
-                const opt = document.createElement('option');
-                opt.value = zone; 
-                opt.innerText = zone;
-                zoneSelect.appendChild(opt);
-            });
+        if (changedSource === 1) {
+            const val1 = parseFloat(document.getElementById('scu-1').value) || 0;
+            document.getElementById('scu-2').value = Math.max(0, total - val1);
+        } else {
+            const val2 = parseFloat(document.getElementById('scu-2').value) || 0;
+            document.getElementById('scu-1').value = Math.max(0, total - val2);
         }
-    }
-
-    function addManifestItem(contractId, itemData = null) {
-        const index = document.querySelectorAll(`#p-man-${contractId} .step-row`).length;
-        const syncId = `sync-${contractId}-${index}`;
-        const phtml = `<div class="step-row" id="p-${syncId}"><input type="text" class="m-item" placeholder="Commodity" value="${itemData?.item || ''}" oninput="syncData('${syncId}')"><input type="number" class="m-scu" placeholder="SCU" value="${itemData?.scu || ''}" style="width:70px" oninput="syncData('${syncId}')"></div>`;
-        document.getElementById(`p-man-${contractId}`).insertAdjacentHTML('beforeend', phtml);
-        const dhtml = `<div class="step-row" id="d-${syncId}"><input type="text" id="sync-item-${syncId}" value="${itemData?.item || ''}" readonly style="opacity:0.6; flex:1;"><input type="number" id="sync-scu-${syncId}" value="${itemData?.scu || ''}" readonly style="opacity:0.6; width:80px;"></div>`;
-        document.getElementById(`d-man-${contractId}`).insertAdjacentHTML('beforeend', dhtml);
-    }
-
-    function syncData(syncId) {
-        document.getElementById(`sync-item-${syncId}`).value = document.querySelector(`#p-${syncId} .m-item`).value;
-        document.getElementById(`sync-scu-${syncId}`).value = document.querySelector(`#p-${syncId} .m-scu`).value;
-    }
-
-    function handleTitlePrediction(input, id) {
-        const val = input.value;
-        const datalist = document.getElementById('dynamic-title-words');
-        const words = val.split(" ");
-        const lastWord = words[words.length - 1].toLowerCase();
-        const prefix = words.slice(0, -1).join(" ");
-        datalist.innerHTML = ''; 
-        if (lastWord.length > 0) {
-            Array.from(titleWordLibrary).filter(w => w.toLowerCase().startsWith(lastWord)).forEach(match => {
-                const suggestion = (prefix ? prefix + " " : "") + match;
-                const option = document.createElement('option');
-                option.value = suggestion;
-                datalist.appendChild(option);
-            });
-        }
-    }
-
-    function exportToJson() {
-        const screenContracts = [];
-        document.querySelectorAll('.contract-card').forEach(card => {
-            const id = card.dataset.id;
-            screenContracts.push({
-                name: card.querySelector('.c-name').value,
-                category: card.querySelector('.c-category').value,
-                payout: card.querySelector('.c-payout').value,
-                pSystem: card.querySelector('.c-p-system').value,
-                pRegion: card.querySelector('.c-p-region').value,
-                pZone: card.querySelector('.c-p-zone').value,
-                dSystem: card.querySelector('.c-d-system').value,
-                dRegion: card.querySelector('.c-d-region').value,
-                dZone: card.querySelector('.c-d-zone').value,
-                manifest: Array.from(card.querySelectorAll(`#p-man-${id} .step-row`)).map((row, i) => {
-                    return { item: row.querySelector('.m-item').value, scu: row.querySelector('.m-scu').value };
-                })
-            });
-        });
-        const blob = new Blob([JSON.stringify(screenContracts, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `hauling_ledger.json`;
-        a.click();
-    }
-
-    function importDatabase(event) {
-        const reader = new FileReader();
-        reader.onload = e => { JSON.parse(e.target.result).forEach(contract => addContract(contract)); };
-        reader.readAsText(event.target.files[0]);
     }
 </script>
-</body>
-</html>
