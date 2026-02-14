@@ -1,78 +1,172 @@
-<div class="form-section">
-    <h3>Pickup Information</h3>
-    <div class="input-group">
-        <label for="pickup-location">Pickup Location (e.g., ArcCorp Mining Area 048)</label>
-        <select id="pickup-location" class="location-select"></select>
-    </div>
-    <div class="input-group">
-        <label for="total-scu">Total SCU Cargo</label>
-        <input type="number" id="total-scu" placeholder="e.g., 64" oninput="updateSplits()">
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMDR Quattro Logistics Tracker</title>
+    <style>
+        :root { --gold: #c1a058; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .form-container { max-width: 800px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid #333; border-radius: 8px; }
+        h2, h3 { color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
+        .form-section { border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 0.8rem; margin-bottom: 5px; color: #888; }
+        select, input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; }
+        .delivery-zone { background: #222; padding: 15px; border-radius: 4px; margin-bottom: 10px; position: relative; }
+        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .split-btn { background: var(--gold); color: black; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .remove-btn { background: #822; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; }
+        .scu-split-wrap { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .scu-split-wrap input { width: 100px; border-color: var(--gold); }
+    </style>
+</head>
+<body>
 
-<div class="form-section" id="delivery-container">
-    <h3>Delivery Destinations</h3>
+<div class="form-container">
+    <h2>Hauling Manifest</h2>
     
-    <div class="delivery-zone" id="zone-1">
-        <div class="zone-header">
-            <span>Destination 1</span>
+    <div class="form-section">
+        <h3>Primary Pickup</h3>
+        <div class="input-row">
+            <div class="input-group">
+                <label>System</label>
+                <select id="p-system" onchange="updateRegions('p')"></select>
+            </div>
+            <div class="input-group">
+                <label>Region/Planet</label>
+                <select id="p-region" onchange="updateLocations('p')"></select>
+            </div>
+            <div class="input-group">
+                <label>Landing Zone</label>
+                <select id="p-location"></select>
+            </div>
         </div>
-        <select class="location-select" id="dest-1"></select>
-        <div class="scu-input-wrap">
-            <input type="number" class="scu-split" id="scu-1" placeholder="SCU" oninput="syncSplits(1)">
-            <span class="unit">SCU</span>
+        <div class="input-group" style="max-width: 200px;">
+            <label>Total SCU Cargo</label>
+            <input type="number" id="total-scu" value="64" oninput="calculateSplits()">
         </div>
     </div>
 
-    <button type="button" id="add-zone-btn" onclick="toggleSecondZone()">+ Add Split Delivery</button>
-
-    <div class="delivery-zone" id="zone-2" style="display: none;">
-        <div class="zone-header">
-            <span>Destination 2</span>
-            <button type="button" class="remove-btn" onclick="toggleSecondZone()">Remove</button>
+    <div class="form-section" id="delivery-container">
+        <h3>Delivery Destinations</h3>
+        
+        <div class="delivery-zone" id="zone-1">
+            <div class="zone-header"><span>Drop Point A</span></div>
+            <div class="input-row">
+                <select id="d1-system" onchange="updateRegions('d1')"></select>
+                <select id="d1-region" onchange="updateLocations('d1')"></select>
+                <select id="d1-location"></select>
+            </div>
+            <div class="scu-split-wrap">
+                <label>Allocation:</label>
+                <input type="number" id="scu-1" oninput="manualSplit(1)"> <span>SCU</span>
+            </div>
         </div>
-        <select class="location-select" id="dest-2"></select>
-        <div class="scu-input-wrap">
-            <input type="number" class="scu-split" id="scu-2" placeholder="SCU" oninput="syncSplits(2)">
-            <span class="unit">SCU</span>
+
+        <button type="button" class="split-btn" id="split-trigger" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
+
+        <div class="delivery-zone" id="zone-2" style="display: none;">
+            <div class="zone-header">
+                <span>Drop Point B</span>
+                <button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button>
+            </div>
+            <div class="input-row">
+                <select id="d2-system" onchange="updateRegions('d2')"></select>
+                <select id="d2-region" onchange="updateLocations('d2')"></select>
+                <select id="d2-location"></select>
+            </div>
+            <div class="scu-split-wrap">
+                <label>Allocation:</label>
+                <input type="number" id="scu-2" oninput="manualSplit(2)"> <span>SCU</span>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    let splitActive = false;
+// Data structure built from your previous sessions
+const starCitizenData = {
+    "Stanton": {
+        "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2"],
+        "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123"],
+        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HUR-L2", "HUR-L3", "HDMS-Edmond", "HDMS-Hadley", "HDMS-Oparei"],
+        "Crusader": ["Orison", "Seraphim Station", "CRU-L1", "CRU-L4", "CRU-L5"],
+        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MIC-L2"]
+    },
+    "Pyro": {
+        "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "PYR1-L2 (PYAM-FARSTAT-1-2)"],
+        "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station)"],
+        "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)"],
+        "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "Endgame (Rough & Ready)"]
+    },
+    "Nyx": { "Delamar": ["Levski", "Mining Area 157"] }
+};
 
-    function toggleSecondZone() {
-        const zone2 = document.getElementById('zone-2');
-        const btn = document.getElementById('add-zone-btn');
-        splitActive = !splitActive;
-        
-        zone2.style.display = splitActive ? 'block' : 'none';
-        btn.style.display = splitActive ? 'none' : 'block';
-        
-        if (splitActive) updateSplits(); // Auto-calculate 50/50 split on open
+let isSplit = false;
+
+function init() {
+    ['p', 'd1', 'd2'].forEach(prefix => {
+        const sysSelect = document.getElementById(`${prefix}-system`);
+        Object.keys(starCitizenData).forEach(sys => {
+            sysSelect.add(new Option(sys, sys));
+        });
+        updateRegions(prefix);
+    });
+    calculateSplits();
+}
+
+function updateRegions(prefix) {
+    const sys = document.getElementById(`${prefix}-system`).value;
+    const regSelect = document.getElementById(`${prefix}-region`);
+    regSelect.innerHTML = '';
+    Object.keys(starCitizenData[sys]).forEach(reg => {
+        regSelect.add(new Option(reg, reg));
+    });
+    updateLocations(prefix);
+}
+
+function updateLocations(prefix) {
+    const sys = document.getElementById(`${prefix}-system`).value;
+    const reg = document.getElementById(`${prefix}-region`).value;
+    const locSelect = document.getElementById(`${prefix}-location`);
+    locSelect.innerHTML = '';
+    starCitizenData[sys][reg].forEach(loc => {
+        locSelect.add(new Option(loc, loc));
+    });
+}
+
+function toggleSplit() {
+    isSplit = !isSplit;
+    document.getElementById('zone-2').style.display = isSplit ? 'block' : 'none';
+    document.getElementById('split-trigger').style.display = isSplit ? 'none' : 'block';
+    calculateSplits();
+}
+
+function calculateSplits() {
+    const total = parseFloat(document.getElementById('total-scu').value) || 0;
+    if (isSplit) {
+        document.getElementById('scu-1').value = total / 2;
+        document.getElementById('scu-2').value = total / 2;
+    } else {
+        document.getElementById('scu-1').value = total;
     }
+}
 
-    function updateSplits() {
-        const total = parseFloat(document.getElementById('total-scu').value) || 0;
-        if (splitActive) {
-            document.getElementById('scu-1').value = total / 2;
-            document.getElementById('scu-2').value = total / 2;
-        } else {
-            document.getElementById('scu-1').value = total;
-        }
+function manualSplit(origin) {
+    const total = parseFloat(document.getElementById('total-scu').value) || 0;
+    if (!isSplit) return;
+    if (origin === 1) {
+        const val1 = parseFloat(document.getElementById('scu-1').value) || 0;
+        document.getElementById('scu-2').value = Math.max(0, total - val1);
+    } else {
+        const val2 = parseFloat(document.getElementById('scu-2').value) || 0;
+        document.getElementById('scu-1').value = Math.max(0, total - val2);
     }
+}
 
-    function syncSplits(changedSource) {
-        const total = parseFloat(document.getElementById('total-scu').value) || 0;
-        if (!splitActive) return;
-
-        if (changedSource === 1) {
-            const val1 = parseFloat(document.getElementById('scu-1').value) || 0;
-            document.getElementById('scu-2').value = Math.max(0, total - val1);
-        } else {
-            const val2 = parseFloat(document.getElementById('scu-2').value) || 0;
-            document.getElementById('scu-1').value = Math.max(0, total - val2);
-        }
-    }
+window.onload = init;
 </script>
+</body>
+</html>
