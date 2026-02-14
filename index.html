@@ -6,23 +6,30 @@
     <title>CMDR Quattro Logistics Tracker</title>
     <style>
         :root { --accent: #822; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; --border: #333; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
-        .form-container { max-width: 1000px; margin: 0 auto; background: var(--panel); padding: 25px; border: 1px solid var(--border); border-radius: 4px; }
-        h2, h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; border-bottom: 1px solid var(--accent); padding-bottom: 5px; }
-        .form-section { margin-bottom: 25px; }
-        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .input-group { display: flex; flex-direction: column; }
-        label { font-size: 0.75rem; margin-bottom: 5px; color: #aaa; text-transform: uppercase; }
-        select, input { background: #222; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 2px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 10px; }
+        .form-container { max-width: 1400px; margin: 0 auto; background: var(--panel); padding: 20px; border: 1px solid var(--border); border-radius: 4px; }
+        
+        h2, h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; border-bottom: 1px solid var(--accent); padding-bottom: 5px; font-size: 1.1rem; }
+        
+        .main-layout { display: grid; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
+        .delivery-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .delivery-grid.split { grid-template-columns: 1fr 1fr; }
+
+        .form-section { margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+        label { font-size: 0.7rem; margin-bottom: 3px; color: #aaa; text-transform: uppercase; }
+        
+        select, input { background: #222; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 2px; font-size: 0.85rem; }
         select:focus, input:focus { border-color: var(--accent); outline: none; }
-        .manifest-item { display: grid; grid-template-columns: 2fr 1fr 40px; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .delivery-zone { background: #111; padding: 20px; border-left: 4px solid var(--accent); margin-bottom: 15px; }
-        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .action-btn:hover { background: #a33; }
-        .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 12px; cursor: pointer; text-transform: uppercase; font-weight: bold; }
-        .remove-btn { background: transparent; color: #666; border: 1px solid #444; padding: 4px 8px; cursor: pointer; font-size: 0.7rem; }
-        .remove-btn:hover { color: white; border-color: var(--accent); }
+
+        .manifest-item { display: grid; grid-template-columns: 1fr 80px 30px; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .delivery-zone { background: #111; padding: 15px; border-top: 3px solid var(--accent); }
+        
+        .action-btn { background: var(--accent); color: white; border: none; padding: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase; width: 100%; font-size: 0.8rem; }
+        .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 8px; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; }
+        
+        .item-split-row { display: grid; grid-template-columns: 1fr 60px; gap: 10px; margin-bottom: 5px; background: #1a1a1a; padding: 5px; border-radius: 2px; font-size: 0.8rem; }
+        
         .hidden { display: none; }
         #import-input { display: none; }
     </style>
@@ -30,92 +37,93 @@
 <body>
 
 <div class="form-container">
-    <h2>Hauling Manifest</h2>
-    
-    <div class="form-section">
-        <div class="input-group">
-            <label>Manifest Title (100 Character Limit)</label>
-            <input type="text" id="manifest-title" maxlength="100" placeholder="e.g., Pyro II Ammo & Meds Split Run">
-        </div>
+    <div class="input-group" style="margin-bottom: 20px;">
+        <label>Manifest Title (100 Character Limit)</label>
+        <input type="text" id="manifest-title" maxlength="100" placeholder="e.g., Pyro II Split Run">
     </div>
 
-    <div class="form-section">
-        <h3>Primary Pickup</h3>
-        <div class="input-row">
+    <div class="main-layout">
+        <div class="form-section" style="background: #151515; padding: 15px; border-radius: 4px;">
+            <h3>Primary Pickup</h3>
             <div class="input-group"><label>System</label><select id="p-system" onchange="updateRegions('p')"></select></div>
-            <div class="input-group"><label>Region/Planet</label><select id="p-region" onchange="updateLocations('p')"></select></div>
-            <div class="input-group"><label>Landing Zone</label><select id="p-location"></select></div>
-        </div>
-        
-        <label>Commodity Manifest</label>
-        <div id="manifest-list">
-            <div class="manifest-item">
-                <input type="text" class="comm-name" placeholder="Item Name (e.g. Ship Ammunition)" oninput="syncToDrops()">
-                <input type="number" class="comm-qty" placeholder="Total SCU" oninput="calculateTotalSCU()">
-                <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU();">X</button>
+            <div class="input-row-mini" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="input-group"><label>Region</label><select id="p-region" onchange="updateLocations('p')"></select></div>
+                <div class="input-group"><label>Location</label><select id="p-location"></select></div>
+            </div>
+            
+            <label style="margin-top:15px; display:block;">Commodities</label>
+            <div id="manifest-list">
+                <div class="manifest-item">
+                    <input type="text" class="comm-name" placeholder="Item" oninput="syncToDrops()">
+                    <input type="number" class="comm-qty" placeholder="Qty" oninput="calculateTotalSCU()">
+                    <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU();">X</button>
+                </div>
+            </div>
+            <button type="button" class="secondary-btn" onclick="addCommodity()">+ Add Item</button>
+            
+            <div class="input-group" style="margin-top: 15px;">
+                <label>Total SCU</label>
+                <input type="number" id="total-scu" value="0" readonly style="color: var(--accent); font-weight: bold; border:none; background:transparent; font-size:1.2rem;">
             </div>
         </div>
-        <button type="button" class="secondary-btn" style="padding: 5px 15px; font-size: 0.7rem; margin-top: 5px;" onclick="addCommodity()">+ Add Item</button>
-        
-        <div class="input-group" style="max-width: 200px; margin-top: 15px;">
-            <label>Total Combined SCU</label>
-            <input type="number" id="total-scu" value="0" readonly style="color: var(--accent); font-weight: bold;">
+
+        <div class="form-section">
+            <h3>Delivery Destinations</h3>
+            <div id="delivery-grid" class="delivery-grid">
+                <div class="delivery-zone" id="zone-1">
+                    <label style="color:var(--accent); font-weight:bold;">Drop Point A</label>
+                    <div class="input-row-mini" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
+                        <select id="d1-system" onchange="updateRegions('d1')"></select>
+                        <select id="d1-region" onchange="updateRegions('d1')"></select>
+                        <select id="d1-location"></select>
+                    </div>
+                    <div id="d1-items"></div>
+                </div>
+
+                <div class="delivery-zone hidden" id="zone-2">
+                    <div style="display:flex; justify-content:space-between;">
+                        <label style="color:var(--accent); font-weight:bold;">Drop Point B</label>
+                        <button class="remove-btn" onclick="toggleSplit()">Remove</button>
+                    </div>
+                    <div class="input-row-mini" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
+                        <select id="d2-system" onchange="updateRegions('d2')"></select>
+                        <select id="d2-region" onchange="updateRegions('d2')"></select>
+                        <select id="d2-location"></select>
+                    </div>
+                    <div id="d2-items"></div>
+                </div>
+            </div>
+            <button type="button" class="action-btn" id="split-trigger" onclick="toggleSplit()">+ Split Delivery (Multi-Drop Run)</button>
         </div>
     </div>
 
-    <div class="form-section">
-        <h3>Delivery Destinations</h3>
-        <div class="delivery-zone" id="zone-1">
-            <div class="zone-header"><span>DROP POINT A</span></div>
-            <div class="input-row">
-                <div class="input-group"><label>System</label><select id="d1-system" onchange="updateRegions('d1')"></select></div>
-                <div class="input-group"><label>Region</label><select id="d1-region" onchange="updateLocations('d1')"></select></div>
-                <div class="input-group"><label>Location</label><select id="d1-location"></select></div>
-            </div>
-            <div id="d1-items"></div>
-        </div>
-
-        <button type="button" class="action-btn" id="split-trigger" style="width: 100%;" onclick="toggleSplit()">+ Add Split Delivery (A/B Run)</button>
-
-        <div class="delivery-zone hidden" id="zone-2">
-            <div class="zone-header"><span>DROP POINT B</span><button type="button" class="remove-btn" onclick="toggleSplit()">Remove Split</button></div>
-            <div class="input-row">
-                <div class="input-group"><label>System</label><select id="d2-system" onchange="updateRegions('d2')"></select></div>
-                <div class="input-group"><label>Region</label><select id="d2-region" onchange="updateLocations('d2')"></select></div>
-                <div class="input-group"><label>Location</label><select id="d2-location"></select></div>
-            </div>
-            <div id="d2-items"></div>
-        </div>
-    </div>
-
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; margin-top:20px; border-top: 1px solid #333; padding-top:20px;">
         <input type="file" id="import-input" accept=".json" onchange="importJSON(event)">
-        <button class="secondary-btn" style="flex:1" onclick="document.getElementById('import-input').click()">Import JSON</button>
-        <button class="action-btn" style="flex:1" onclick="exportJSON()">Export Manifest</button>
+        <button class="secondary-btn" style="flex:1" onclick="document.getElementById('import-input').click()">Import Manifest</button>
+        <button class="action-btn" style="flex:1" onclick="exportJSON()">Export JSON File</button>
     </div>
 </div>
 
 <script>
 const starCitizenData = {
     "Stanton": {
-        "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point", "ARC-L1", "ARC-L2", "ARC-L3", "ARC-L4", "ARC-L5"],
-        "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123", "Lost and Found", "Good Times Temple", "Samson & Sons Salvage Center"],
-        "Lyria": ["Humboldt Mines", "Loveridge Mineral Reserve", "Shubin Mining Facility SAL-2", "Shubin Mining Facility SAL-5", "Shubin Processing Facility SPAL-3", "Shubin Processing Facility SPAL-7", "Shubin Processing Facility SPAL-9", "Shubin Processing Facility SPAL-12", "Shubin Processing Facility SPAL-16", "Shubin Processing Facility SPAL-21", "Security Depot Lyria-1", "Elsewhere", "Teddy's Playhouse", "The Orphanage", "The Pit", "Wheeler's", "Paradise Cove", "Buckets", "Launch Pad"],
-        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HUR-L2", "HUR-L3", "HUR-L4", "HUR-L5", "HDMS-Edmond", "HDMS-Hadley", "HDMS-Oparei", "HDMS-Pinewood", "HDMS-Stanhope", "HDMS-Thedus", "HDSF-Adlai", "HDSF-Barnabas", "HDSF-Breckinridge", "HDSF-Colfax", "HDSF-Damaris", "HDSF-Elbridge", "HDSF-Hendricks", "HDSF-Hiram", "HDSF-Hobart", "HDSF-Ishmael", "HDSF-Millerand", "HDSF-Rufus", "HDSF-Sherman", "HDSF-Tamar", "HDSF-Tompkins", "HDSF-Zacharias", "HDRSO-Bramen", "Security Depot Hurston-1", "Reclamation & Disposal Orinth", "HDMO-Calthrope", "Downed Relay AC-652", "Rappel"],
+        "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point"],
+        "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123"],
+        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HUR-L2", "HUR-L3", "HDMS-Edmond", "HDMS-Hadley", "HDMS-Oparei", "HDSF-Adlai", "HDSF-Barnabas", "Reclamation & Disposal Orinth"],
         "Crusader": ["Orison", "Seraphim Station", "CRU-L1", "CRU-L4", "CRU-L5"],
-        "Cellin": ["Gallete Family Farms", "Terra Mills HydroFarm", "Tram & Myers Mining", "Hickes Research Outpost", "Security Post Criska", "Security Post Dipur", "Security Post Lespin"],
-        "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Security Post Moluto", "Security Post Prashad", "Security Post Thaquray", "Jump Town", "Brio's Breaker Yard", "Nuen Waste Management", "Whistlers Crypt", "Yadar Valley", "Dunlow Ridge Aid Shelter", "Eager Flats Aid Shelter", "Tamdon Plains Aid Shelter", "Wolf Point Aid Shelter"],
-        "Yela": ["GrimHEX", "Afterlife", "ArcCorp Mining Area 157", "Aston Ridge Aid Shelter", "Benson Mining Outpost", "Connor's", "Deakins Research Outpost", "Jumptown", "Kosso Basin Aid Shelter", "Nakamura Valley Aid Shelter", "NT-999-XX", "NT-999-XXII", "Security Post Opal", "Security Post Wan", "Talarine Divide Aid Shelter", "Utopia", "Abandoned Outpost"],
-        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MIC-L2", "MIC-L3", "MIC-L4", "MIC-L5", "MT DataCenter 2UB-RB9-5", "MT DataCenter 4HJ-LVE-A", "MT DataCenter 5WQ-R2V-C", "MT DataCenter 8FK-Q2X-K", "MT DataCenter D79-ECG-R", "MT DataCenter E2Q-NSG-Y", "MT DataCenter TMG-XEV-2", "MT DataCenter QVX-J88-J", "MT DataCenter L8P-JUC-8"],
-        "Calliope": ["Shubin Mining Facility SMCa-6", "Shubin Mining Facility SMCa-8", "Shubin Processing Facility SPMC-1", "Shubin Processing Facility SPMC-3", "Shubin Processing Facility SPMC-5", "Shubin Processing Facility SPMC-10", "Shubin Processing Facility SPMC-11", "Shubin Processing Facility SPMC-14", "Rayari Anvik Research Outpost", "Rayari Kaltag Research Outpost"]
+        "Cellin": ["Gallete Family Farms", "Terra Mills HydroFarm", "Tram & Myers Mining", "Security Post Criska"],
+        "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Jump Town"],
+        "Yela": ["GrimHEX", "ArcCorp Mining Area 157", "Benson Mining Outpost", "Jumptown", "NT-999-XXII", "Security Post Wan"],
+        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MIC-L2", "MT DataCenter 2UB-RB9-5", "Ghost Hollow"],
+        "Calliope": ["Shubin Mining Facility SMCa-6", "Shubin Processing Facility SPMC-1", "Rayari Anvik Research Outpost"]
     },
     "Pyro": {
-        "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "Stanton Gateway", "PYR1-L1", "PYR1-L2 (PYAM-FARSTAT-1-2)", "PYR1-L3 (PYAM-FARSTAT-1-3 / Akiro Cluster)", "PYR1-L5 (PYAM-FARSTAT-1-5)"],
-        "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station - Rough & Ready)"],
-        "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)", "PYR3-L1 (Starlight Service Station - Prosperity)", "PYR3-L3 (Patch City - Rough & Ready)", "PYR3-L5 (PYAM-FARSTAT-3-5)"],
+        "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "Stanton Gateway"],
+        "Pyro II (Monox)": ["Arid Reach", "Jackson's Swap", "Last Ditch", "Ostler's Claim", "Slowburn Depot", "Sunset Mesa", "Yang's Place", "PYR2-L4 (Checkmate Station)"],
+        "Pyro III (Bloom)": ["Orbituary (Rough & Ready)", "Prospect Depot", "Bueno Ravine", "Shadowfall (XenoThreat)", "PYR3-L1 (Starlight Service Station)", "PYR3-L3 (Patch City)"],
         "Pyro IV": ["Chawla's Beach", "Dinger's Depot", "Fallow Field", "Goner's Deal", "Sacren's Plot"],
-        "Pyro V": ["PYR5-L1 (PYAM-FARSTAT-5-1)", "PYR5-L2 (Gaslight - Rough & Ready)", "PYR5-L3 (PYAM-FARSTAT-5-3)", "PYR5-L4 (Rod's Fuel 'N Supplies - Prosperity)", "PYR5-L5 (Rat's Nest - Rough & Ready)"],
-        "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "PYR6-L3 (Endgame - Rough & Ready)", "PYR6-L4 (Dudley & Daughters - Prosperity)", "PYR6-L5 (Megumi Refueling - Rough & Ready)"]
+        "Pyro V": ["PYR5-L1 (PYAM-FARSTAT-5-1)", "PYR5-L2 (Gaslight)", "PYR5-L4 (Rod's Fuel 'N Supplies)", "PYR5-L5 (Rat's Nest)"],
+        "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Blackrock Exchange", "PYR6-L3 (Endgame)", "PYR6-L4 (Dudley & Daughters)", "PYR6-L5 (Megumi Refueling)"]
     },
     "Nyx": { "Delamar": ["Levski", "Mining Area 157"] }
 };
@@ -124,61 +132,57 @@ let splitActive = false;
 
 function init() {
     ['p', 'd1', 'd2'].forEach(pre => {
-        const sysSel = document.getElementById(`${pre}-system`);
-        Object.keys(starCitizenData).forEach(s => sysSel.add(new Option(s, s)));
+        const s = document.getElementById(`${pre}-system`);
+        Object.keys(starCitizenData).forEach(sys => s.add(new Option(sys, sys)));
         updateRegions(pre);
     });
     syncToDrops();
 }
 
 function updateRegions(pre) {
-    const sys = document.getElementById(`${pre}-system`).value;
-    const regSel = document.getElementById(`${pre}-region`);
-    regSel.innerHTML = '';
-    Object.keys(starCitizenData[sys]).forEach(r => regSel.add(new Option(r, r)));
+    const s = document.getElementById(`${pre}-system`).value;
+    const r = document.getElementById(`${pre}-region`);
+    r.innerHTML = '';
+    Object.keys(starCitizenData[s]).forEach(reg => r.add(new Option(reg, reg)));
     updateLocations(pre);
 }
 
 function updateLocations(pre) {
-    const sys = document.getElementById(`${pre}-system`).value;
-    const reg = document.getElementById(`${pre}-region`).value;
-    const locSel = document.getElementById(`${pre}-location`);
-    locSel.innerHTML = '';
-    starCitizenData[sys][reg].forEach(l => locSel.add(new Option(l, l)));
+    const s = document.getElementById(`${pre}-system`).value;
+    const r = document.getElementById(`${pre}-region`).value;
+    const l = document.getElementById(`${pre}-location`);
+    l.innerHTML = '';
+    starCitizenData[s][r].forEach(loc => l.add(new Option(loc, loc)));
 }
 
 function addCommodity() {
-    const container = document.getElementById('manifest-list');
     const div = document.createElement('div');
     div.className = 'manifest-item';
-    div.innerHTML = `<input type="text" class="comm-name" placeholder="Item Name" oninput="syncToDrops()">
-                     <input type="number" class="comm-qty" placeholder="Total SCU" oninput="calculateTotalSCU()">
+    div.innerHTML = `<input type="text" class="comm-name" placeholder="Item" oninput="syncToDrops()">
+                     <input type="number" class="comm-qty" placeholder="Qty" oninput="calculateTotalSCU()">
                      <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU(); syncToDrops();">X</button>`;
-    container.appendChild(div);
+    document.getElementById('manifest-list').appendChild(div);
 }
 
 function calculateTotalSCU() {
-    let total = 0;
-    document.querySelectorAll('.comm-qty').forEach(input => total += parseFloat(input.value) || 0);
-    document.getElementById('total-scu').value = total;
+    let t = 0;
+    document.querySelectorAll('.comm-qty').forEach(i => t += parseFloat(i.value) || 0);
+    document.getElementById('total-scu').value = t;
     syncToDrops();
 }
 
 function syncToDrops() {
-    const commodities = Array.from(document.querySelectorAll('.manifest-item')).map(item => ({
-        name: item.querySelector('.comm-name').value || "Unnamed Item",
-        qty: parseFloat(item.querySelector('.comm-qty').value) || 0
+    const items = Array.from(document.querySelectorAll('.manifest-item')).map(i => ({
+        n: i.querySelector('.comm-name').value || "Item",
+        q: parseFloat(i.querySelector('.comm-qty').value) || 0
     }));
 
     ['d1', 'd2'].forEach(pre => {
-        const container = document.getElementById(`${pre}-items`);
-        container.innerHTML = '';
-        commodities.forEach((c, idx) => {
-            const val = splitActive ? (c.qty / 2) : c.qty;
-            container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.8rem;">
-                <span>${c.name}</span>
-                <input type="number" class="${pre}-scu-split" data-idx="${idx}" value="${val}" style="width:60px; height:20px;">
-            </div>`;
+        const c = document.getElementById(`${pre}-items`);
+        c.innerHTML = '';
+        items.forEach(item => {
+            const val = splitActive ? (item.q / 2) : item.q;
+            c.innerHTML += `<div class="item-split-row"><span>${item.n}</span><input type="number" value="${val}"></div>`;
         });
     });
 }
@@ -186,6 +190,7 @@ function syncToDrops() {
 function toggleSplit() {
     splitActive = !splitActive;
     document.getElementById('zone-2').classList.toggle('hidden');
+    document.getElementById('delivery-grid').classList.toggle('split');
     document.getElementById('split-trigger').classList.toggle('hidden');
     syncToDrops();
 }
@@ -193,32 +198,31 @@ function toggleSplit() {
 function exportJSON() {
     const manifest = {
         title: document.getElementById('manifest-title').value.substring(0, 100),
-        pickup: { loc: document.getElementById('p-location').value },
-        commodities: Array.from(document.querySelectorAll('.manifest-item')).map(i => ({
-            item: i.querySelector('.comm-name').value,
-            total: i.querySelector('.comm-qty').value
-        })),
-        dropA: document.getElementById('d1-location').value,
-        dropB: splitActive ? document.getElementById('d2-location').value : null
+        pickup: document.getElementById('p-location').value,
+        items: Array.from(document.querySelectorAll('.manifest-item')).map(i => ({
+            name: i.querySelector('.comm-name').value,
+            qty: i.querySelector('.comm-qty').value
+        }))
     };
     const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `${manifest.title || 'manifest'}.json`; a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = `${manifest.title || 'manifest'}.json`;
+    a.click();
 }
 
 function importJSON(event) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = (e) => {
         const data = JSON.parse(e.target.result);
         document.getElementById('manifest-title').value = data.title;
         const list = document.getElementById('manifest-list');
         list.innerHTML = '';
-        data.commodities.forEach(c => {
+        data.items.forEach(i => {
             const div = document.createElement('div');
             div.className = 'manifest-item';
-            div.innerHTML = `<input type="text" class="comm-name" value="${c.item}" oninput="syncToDrops()">
-                             <input type="number" class="comm-qty" value="${c.total}" oninput="calculateTotalSCU()">
+            div.innerHTML = `<input type="text" class="comm-name" value="${i.name}" oninput="syncToDrops()">
+                             <input type="number" class="comm-qty" value="${i.qty}" oninput="calculateTotalSCU()">
                              <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calculateTotalSCU(); syncToDrops();">X</button>`;
             list.appendChild(div);
         });
