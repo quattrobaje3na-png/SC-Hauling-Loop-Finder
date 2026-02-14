@@ -1,9 +1,9 @@
-[
-  "Priority Haul",
-  "Hauling-Interstellar",
-  "Bulk Haul",
-  "Small Scale Haul",
-  "Medium Scale Haul",
-  "Covalex Independent Haul",
-  "Red Wind Distribution"
-]
+{
+  "contract_terms": [
+    "Alliance", "Aid", "Bulk", "Covalex", "Clipper", "Cargo", "Collection", 
+    "Defense", "Distribution", "Direct", "Experienced", "Haul", "Hauler", 
+    "Independent", "Interstellar", "Junior", "Local", "Large", "Medium", 
+    "Master", "Member", "Planetary", "Red", "Resource", "Rookie", "Solar", 
+    "Small", "Scale", "Transport", "Wind"
+  ]
+}
