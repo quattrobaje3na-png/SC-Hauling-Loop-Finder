@@ -6,37 +6,21 @@
     <title>CMDR Quattro Logistics Ledger</title>
     <style>
         :root { --accent: #822; --bg: #0a0a0a; --panel: #1a1a1a; --text: #e0e0e0; --border: #333; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 10px; }
-        
-        .ledger-container { max-width: 1700px; margin: 0 auto; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
+        .ledger-container { max-width: 1000px; margin: 0 auto; }
         .contract-block { background: var(--panel); padding: 20px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 30px; }
         .contract-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); margin-bottom: 15px; padding-bottom: 10px; }
-        
-        .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
-        .side-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        .side-grid.split { grid-template-columns: 1fr 1fr; }
-
         h2, h3 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin: 0; font-size: 1.1rem; }
+        .form-section { margin-bottom: 20px; }
         .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
         label { font-size: 0.7rem; margin-bottom: 3px; color: #aaa; text-transform: uppercase; }
-        select, input { background: #222; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 2px; font-size: 0.85rem; }
-        select:focus, input:focus { border-color: var(--accent); outline: none; }
-
-        .manifest-item { display: grid; grid-template-columns: 1fr 80px 30px; gap: 8px; margin-bottom: 8px; align-items: center; }
-        .item-split-row { display: grid; grid-template-columns: 1fr 60px; gap: 10px; margin-bottom: 5px; background: #1a1a1a; padding: 5px; border-radius: 2px; font-size: 0.8rem; }
-        
-        .zone-box { background: #111; padding: 15px; border-top: 3px solid var(--accent); }
-        .pickup-box { border-top-color: #555; } /* Secondary color for pickup zones */
-        .delivery-box { border-top-color: var(--accent); }
-
-        .action-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; }
-        .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 8px; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; }
-        .remove-contract-btn { background: transparent; color: #666; border: 1px solid #444; padding: 5px 10px; cursor: pointer; font-size: 0.75rem; }
-        
-        .global-actions { position: sticky; bottom: 20px; background: rgba(10,10,10,0.95); padding: 15px; border: 1px solid var(--accent); border-radius: 4px; display: flex; gap: 15px; z-index: 100; }
-        
+        select, input { background: #222; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 2px; }
+        .manifest-item { display: grid; grid-template-columns: 1fr 100px 40px; gap: 10px; margin-bottom: 10px; }
+        .zone-box { background: #111; padding: 15px; border-top: 3px solid var(--accent); margin-top: 10px; }
+        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; cursor: pointer; font-weight: bold; text-transform: uppercase; width: 100%; }
+        .secondary-btn { background: #333; color: white; border: 1px solid #444; padding: 10px; cursor: pointer; text-transform: uppercase; }
+        .global-actions { position: sticky; bottom: 20px; background: rgba(10,10,10,0.95); padding: 15px; border: 1px solid var(--accent); display: flex; gap: 10px; z-index: 100; border-radius: 4px; }
         .hidden { display: none; }
-        #import-input { display: none; }
     </style>
 </head>
 <body>
@@ -45,10 +29,9 @@
 
 <div class="global-actions">
     <button class="action-btn" onclick="addNewContract()">+ Add New Contract</button>
-    <div style="flex-grow: 1;"></div>
-    <input type="file" id="import-input" accept=".json" onchange="importLedger(event)">
+    <input type="file" id="import-input" accept=".json" onchange="importLedger(event)" style="display:none">
     <button class="secondary-btn" onclick="document.getElementById('import-input').click()">Import Ledger JSON</button>
-    <button class="action-btn" onclick="exportLedger()">Export Full Ledger</button>
+    <button class="action-btn" onclick="exportLedger()">Export Ledger JSON</button>
 </div>
 
 <script>
@@ -57,13 +40,12 @@ const starCitizenData = {
         "ArcCorp": ["Area18", "Area04", "Area06", "Area17", "Baijini Point"],
         "Wala": ["Shady Glen Farms", "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061", "ArcCorp Processing Center 115", "ArcCorp Processing Center 123"],
         "Lyria": ["Humboldt Mines", "Loveridge Mineral Reserve", "Shubin Mining Facility SAL-2", "Security Depot Lyria-1"],
-        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HDMS-Edmond", "HDMS-Oparei", "Reclamation & Disposal Orinth"],
+        "Hurston": ["Lorville", "Everus Harbor", "HUR-L1", "HDMS-Edmond", "HDMS-Oparei"],
         "Crusader": ["Orison", "Seraphim Station", "CRU-L1", "CRU-L4", "CRU-L5"],
         "Cellin": ["Gallete Family Farms", "Terra Mills HydroFarm", "Tram & Myers Mining", "Security Post Criska"],
-        "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Jump Town"],
+        "Daymar": ["Bountiful Harvest Hydroponics", "ArcCorp Mining Area 141", "Kudre Ore", "Shubin Mining Facility SCD-1", "Security Post Moluto", "Security Post Prashad", "Security Post Thaquray", "Jump Town", "Brio's Breaker Yard", "Nuen Waste Management", "Whistlers Crypt", "Yadar Valley", "Dunlow Ridge Aid Shelter", "Eager Flats Aid Shelter", "Tamdon Plains Aid Shelter", "Wolf Point Aid Shelter"],
         "Yela": ["GrimHEX", "ArcCorp Mining Area 157", "Benson Mining Outpost", "Jumptown", "NT-999-XXII", "Security Post Wan"],
-        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "MT DataCenter 2UB-RB9-5", "Ghost Hollow"],
-        "Calliope": ["Shubin Mining Facility SMCa-6", "Shubin Processing Facility SPMC-1", "Rayari Anvik Research Outpost"]
+        "microTech": ["New Babbage", "Port Tressler", "MIC-L1", "Ghost Hollow"]
     },
     "Pyro": {
         "Pyro I": ["Gray Gardens Depot", "Rustville", "Stag's Rut", "Stanton Gateway"],
@@ -78,90 +60,45 @@ const starCitizenData = {
 
 let contractCount = 0;
 
-function addNewContract(data = null) {
+function addNewContract() {
     contractCount++;
     const id = contractCount;
-    const ledger = document.getElementById('ledger');
-    
     const block = document.createElement('div');
     block.className = 'contract-block';
     block.id = `contract-${id}`;
     block.innerHTML = `
         <div class="contract-header">
-            <input type="text" id="title-${id}" maxlength="100" placeholder="Contract Title (100 char)" style="width: 500px; font-weight: bold; border: none; background: transparent; color: var(--accent); font-size: 1.1rem;">
-            <button class="remove-contract-btn" onclick="removeContract(${id})">DELETE CONTRACT</button>
+            <input type="text" id="title-${id}" maxlength="100" placeholder="Manifest Title (100 char limit)" style="width:70%; background:transparent; border:none; color:var(--accent); font-weight:bold;">
+            <button class="secondary-btn" onclick="this.parentElement.parentElement.remove()">Delete</button>
         </div>
-        <div class="main-layout">
-            <div class="form-section">
-                <h3>Pickups</h3>
-                <div id="pick-grid-${id}" class="side-grid">
-                    <div class="zone-box pickup-box" id="p1-zone-${id}">
-                        <label style="color:#888; font-weight:bold;">PICKUP POINT A</label>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
-                            <select id="p1-sys-${id}" onchange="updateLocs(${id}, 'p1')"></select>
-                            <select id="p1-reg-${id}" onchange="updateLocs(${id}, 'p1')"></select>
-                            <select id="p1-loc-${id}"></select>
-                        </div>
-                    </div>
-                    <div class="zone-box pickup-box hidden" id="p2-zone-${id}">
-                        <div style="display:flex; justify-content:space-between;">
-                            <label style="color:#888; font-weight:bold;">PICKUP POINT B</label>
-                            <button class="remove-btn" onclick="toggleSplit(${id}, 'p')">Remove</button>
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
-                            <select id="p2-sys-${id}" onchange="updateLocs(${id}, 'p2')"></select>
-                            <select id="p2-reg-${id}" onchange="updateLocs(${id}, 'p2')"></select>
-                            <select id="p2-loc-${id}"></select>
-                        </div>
-                    </div>
-                </div>
-                <button type="button" class="secondary-btn" id="p-split-btn-${id}" onclick="toggleSplit(${id}, 'p')" style="margin-top:10px; width:100%;">+ Split Pickup (Collection A/B)</button>
-                
-                <label style="margin-top:20px; display:block;">Commodity Manifest</label>
-                <div id="comm-list-${id}" style="background:#151515; padding:10px; border-radius:4px;"></div>
-                <button type="button" class="secondary-btn" onclick="addComm(${id})">+ Add Item</button>
-                <div class="input-group" style="margin-top: 15px;">
-                    <label>Total Combined SCU</label>
-                    <input type="number" id="total-scu-${id}" value="0" readonly style="color: var(--accent); font-weight: bold; border:none; background:transparent; font-size:1.2rem;">
-                </div>
+        <div class="form-section">
+            <h3>Pickup</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                <select id="p-sys-${id}" onchange="updateLocs(${id}, 'p')"></select>
+                <select id="p-reg-${id}" onchange="updateLocs(${id}, 'p')"></select>
+                <select id="p-loc-${id}"></select>
             </div>
-
-            <div class="form-section">
-                <h3>Deliveries</h3>
-                <div id="del-grid-${id}" class="side-grid">
-                    <div class="zone-box delivery-box" id="d1-zone-${id}">
-                        <label style="color:var(--accent); font-weight:bold;">DROP POINT A</label>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
-                            <select id="d1-sys-${id}" onchange="updateLocs(${id}, 'd1')"></select>
-                            <select id="d1-reg-${id}" onchange="updateLocs(${id}, 'd1')"></select>
-                            <select id="d1-loc-${id}"></select>
-                        </div>
-                        <div id="d1-items-${id}"></div>
-                    </div>
-                    <div class="zone-box delivery-box hidden" id="d2-zone-${id}">
-                        <div style="display:flex; justify-content:space-between;">
-                            <label style="color:var(--accent); font-weight:bold;">DROP POINT B</label>
-                            <button class="remove-btn" onclick="toggleSplit(${id}, 'd')">Remove</button>
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin: 10px 0;">
-                            <select id="d2-sys-${id}" onchange="updateLocs(${id}, 'd2')"></select>
-                            <select id="d2-reg-${id}" onchange="updateLocs(${id}, 'd2')"></select>
-                            <select id="d2-loc-${id}"></select>
-                        </div>
-                        <div id="d2-items-${id}"></div>
-                    </div>
+            <label style="margin-top:10px; display:block;">Commodities</label>
+            <div id="comm-list-${id}"></div>
+            <button class="secondary-btn" onclick="addComm(${id})">+ Add Item</button>
+        </div>
+        <div class="form-section">
+            <h3>Delivery</h3>
+            <div class="zone-box">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                    <select id="d-sys-${id}" onchange="updateLocs(${id}, 'd')"></select>
+                    <select id="d-reg-${id}" onchange="updateLocs(${id}, 'd')"></select>
+                    <select id="d-loc-${id}"></select>
                 </div>
-                <button type="button" class="action-btn" id="d-split-btn-${id}" onclick="toggleSplit(${id}, 'd')" style="margin-top:10px; width:100%;">+ Split Delivery (Multi-Drop Run)</button>
             </div>
         </div>
     `;
-    ledger.appendChild(block);
+    document.getElementById('ledger').appendChild(block);
     initSelectors(id);
-    if (!data) addComm(id); 
 }
 
 function initSelectors(id) {
-    ['p1', 'p2', 'd1', 'd2'].forEach(pre => {
+    ['p', 'd'].forEach(pre => {
         const sys = document.getElementById(`${pre}-sys-${id}`);
         Object.keys(starCitizenData).forEach(s => sys.add(new Option(s, s)));
         updateLocs(id, pre);
@@ -173,80 +110,35 @@ function updateLocs(id, pre) {
     const reg = document.getElementById(`${pre}-reg-${id}`);
     const loc = document.getElementById(`${pre}-loc-${id}`);
     const currentReg = reg.value;
-    
     reg.innerHTML = '';
     Object.keys(starCitizenData[sys]).forEach(r => reg.add(new Option(r, r)));
     if (currentReg && starCitizenData[sys][currentReg]) reg.value = currentReg;
-
     loc.innerHTML = '';
     starCitizenData[sys][reg.value].forEach(l => loc.add(new Option(l, l)));
 }
 
-function addComm(id, name = "", qty = "") {
-    const list = document.getElementById(`comm-list-${id}`);
-    const item = document.createElement('div');
-    item.className = 'manifest-item';
-    item.innerHTML = `
-        <input type="text" class="c-name" value="${name}" placeholder="Item (e.g. Ammo)" oninput="sync(${id})">
-        <input type="number" class="c-qty" value="${qty}" placeholder="SCU" oninput="calcTotal(${id})">
-        <button type="button" class="remove-btn" onclick="this.parentElement.remove(); calcTotal(${id});">X</button>
-    `;
-    list.appendChild(item);
-    sync(id);
+function addComm(id, name="", qty="") {
+    const div = document.createElement('div');
+    div.className = 'manifest-item';
+    div.innerHTML = `<input type="text" value="${name}" placeholder="Item"><input type="number" value="${qty}" placeholder="SCU"><button class="secondary-btn" onclick="this.parentElement.remove()">X</button>`;
+    document.getElementById(`comm-list-${id}`).appendChild(div);
 }
-
-function calcTotal(id) {
-    let t = 0;
-    document.querySelectorAll(`#contract-${id} .c-qty`).forEach(i => t += parseFloat(i.value) || 0);
-    document.getElementById(`total-scu-${id}`).value = t;
-    sync(id);
-}
-
-function sync(id) {
-    const dSplit = !document.getElementById(`d2-zone-${id}`).classList.contains('hidden');
-    const items = Array.from(document.querySelectorAll(`#contract-${id} .manifest-item`)).map(i => ({
-        n: i.querySelector('.c-name').value || "Item",
-        q: parseFloat(i.querySelector('.c-qty').value) || 0
-    }));
-
-    ['d1', 'd2'].forEach(pre => {
-        const container = document.getElementById(`${pre}-items-${id}`);
-        container.innerHTML = '';
-        items.forEach(item => {
-            const val = dSplit ? (item.q / 2) : item.q;
-            container.innerHTML += `<div class="item-split-row"><span>${item.n}</span><span style="color:var(--accent); font-weight:bold;">${val}</span></div>`;
-        });
-    });
-}
-
-function toggleSplit(id, type) {
-    const zone = document.getElementById(`${type === 'p' ? 'p2-zone' : 'd2-zone'}-${id}`);
-    const grid = document.getElementById(`${type === 'p' ? 'pick-grid' : 'del-grid'}-${id}`);
-    const btn = document.getElementById(`${type === 'p' ? 'p-split-btn' : 'd-split-btn'}-${id}`);
-    
-    zone.classList.toggle('hidden');
-    grid.classList.toggle('split');
-    btn.classList.toggle('hidden');
-    sync(id);
-}
-
-function removeContract(id) { document.getElementById(`contract-${id}`).remove(); }
 
 function exportLedger() {
-    const contracts = Array.from(document.querySelectorAll('.contract-block')).map(block => {
-        const id = block.id.split('-')[1];
+    const data = Array.from(document.querySelectorAll('.contract-block')).map(b => {
+        const id = b.id.split('-')[1];
         return {
-            title: document.getElementById(`title-${id}`).value.substring(0, 100),
-            pSplit: !document.getElementById(`p2-zone-${id}`).classList.contains('hidden'),
-            dSplit: !document.getElementById(`d2-zone-${id}`).classList.contains('hidden'),
-            pickupA: { sys: document.getElementById(`p1-sys-${id}`).value, reg: document.getElementById(`p1-reg-${id}`).value, loc: document.getElementById(`p1-loc-${id}`).value },
-            pickupB: !document.getElementById(`p2-zone-${id}`).classList.contains('hidden') ? { sys: document.getElementById(`p2-sys-${id}`).value, reg: document.getElementById(`p2-reg-${id}`).value, loc: document.getElementById(`p2-loc-${id}`).value } : null,
-            commodities: Array.from(block.querySelectorAll('.manifest-item')).map(i => ({ item: i.querySelector('.c-name').value, total: i.querySelector('.c-qty').value })),
-            dropA: { sys: document.getElementById(`d1-sys-${id}`).value, reg: document.getElementById(`d1-reg-${id}`).value, loc: document.getElementById(`d1-loc-${id}`).value },
-            dropB: !document.getElementById(`d2-zone-${id}`).classList.contains('hidden') ? { sys: document.getElementById(`d2-sys-${id}`).value, reg: document.getElementById(`d2-reg-${id}`).value, loc: document.getElementById(`d2-loc-${id}`).value } : null
+            title: document.getElementById(`title-${id}`).value,
+            pSys: document.getElementById(`p-sys-${id}`).value,
+            pReg: document.getElementById(`p-reg-${id}`).value,
+            pLoc: document.getElementById(`p-loc-${id}`).value,
+            dSys: document.getElementById(`d-sys-${id}`).value,
+            dReg: document.getElementById(`d-reg-${id}`).value,
+            dLoc: document.getElementById(`d-loc-${id}`).value,
+            comms: Array.from(b.querySelectorAll('.manifest-item')).map(i => ({n: i.children[0].value, q: i.children[1].value}))
         };
     });
-    const blob = new Blob([JSON.stringify(contracts, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `hauling_ledger_${new Date().toISOString().slice(0,10)}.json`;
@@ -257,35 +149,34 @@ function importLedger(event) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const data = JSON.parse(e.target.result);
-        document.getElementById('ledger').innerHTML = '';
+        document.getElementById('ledger').innerHTML = ''; // Clear current
         contractCount = 0;
         data.forEach(c => {
-            addNewContract(true);
+            addNewContract();
             const id = contractCount;
             document.getElementById(`title-${id}`).value = c.title;
-            if (c.pSplit) toggleSplit(id, 'p');
-            if (c.dSplit) toggleSplit(id, 'd');
             
-            setField(id, 'p1', c.pickupA);
-            if (c.pSplit) setField(id, 'p2', c.pickupB);
-            c.commodities.forEach(item => addComm(id, item.item, item.total));
-            setField(id, 'd1', c.dropA);
-            if (c.dSplit) setField(id, 'd2', c.dropB);
-            calcTotal(id);
+            // Set values and trigger cascading updates
+            document.getElementById(`p-sys-${id}`).value = c.pSys;
+            updateLocs(id, 'p');
+            document.getElementById(`p-reg-${id}`).value = c.pReg;
+            updateLocs(id, 'p');
+            document.getElementById(`p-loc-${id}`).value = c.pLoc;
+
+            document.getElementById(`d-sys-${id}`).value = c.dSys;
+            updateLocs(id, 'd');
+            document.getElementById(`d-reg-${id}`).value = c.dReg;
+            updateLocs(id, 'd');
+            document.getElementById(`d-loc-${id}`).value = c.dLoc;
+
+            document.getElementById(`comm-list-${id}`).innerHTML = ''; // Clear default
+            c.comms.forEach(item => addComm(id, item.n, item.q));
         });
     };
     reader.readAsText(event.target.files[0]);
 }
 
-function setField(id, pre, data) {
-    document.getElementById(`${pre}-sys-${id}`).value = data.sys;
-    updateLocs(id, pre);
-    document.getElementById(`${pre}-reg-${id}`).value = data.reg;
-    updateLocs(id, pre);
-    document.getElementById(`${pre}-loc-${id}`).value = data.loc;
-}
-
-window.onload = () => addNewContract();
+window.onload = addNewContract;
 </script>
 </body>
 </html>
