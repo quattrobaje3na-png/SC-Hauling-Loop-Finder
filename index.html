@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCS Hauling: Persistent Ops Ledger</title>
+    <title>SCS Hauling: Predictive Ops Ledger</title>
     <style>
         :root {
             --primary: #ff4d4d;
@@ -49,7 +49,6 @@
 
         .contract-card.minimized { padding: 10px 20px; background: var(--minimized); border-left: 5px solid var(--primary); }
         .contract-card.minimized .card-content { display: none; }
-        .contract-card.minimized .row { margin-bottom: 0; }
 
         .card-controls { position: absolute; right: 15px; top: 10px; display: flex; gap: 10px; }
         .section-label { font-size: 0.75rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); display: block; }
@@ -57,7 +56,8 @@
         .input-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
         
         label { font-size: 0.75rem; color: #888; margin-bottom: 5px; }
-        select, input { background: var(--accent); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; }
+        input { background: var(--accent); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; }
+        input:focus { outline: 1px solid var(--primary); background: #000; }
 
         .manifest-area { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; margin-top: 10px; }
         .step-row { background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; display: flex; gap: 10px; border-left: 3px solid var(--primary); }
@@ -69,42 +69,66 @@
         .btn-toggle { background: #555; color: white; padding: 5px 10px; font-size: 0.7rem; }
         .btn-delete { background: #aa0000; color: white; padding: 5px 10px; }
         
-        #auto-search { flex-grow: 1; padding: 10px; border-radius: 4px; border: 1px solid var(--primary); background: #000; color: #fff; }
+        /* Auto-suggest styling */
+        datalist { background: var(--card); color: white; }
     </style>
 </head>
 <body>
 
+<datalist id="list-categories">
+    <option value="Priority">
+    <option value="Hauling">
+    <option value="Hauling-Interstellar">
+</datalist>
+
+<datalist id="list-systems">
+    <option value="Stanton">
+    <option value="Pyro">
+    <option value="Nyx">
+</datalist>
+
+<datalist id="list-materials">
+    <option value="Aphorite">
+    <option value="Audio-Visual Equipment">
+    <option value="Beryl">
+    <option value="Carbon">
+    <option value="Copper (Ore)">
+    <option value="Diamond">
+    <option value="Distilled Spirits">
+    <option value="Fresh Food">
+    <option value="Gold">
+    <option value="Iron (Ore)">
+    <option value="Laranite">
+    <option value="Medical Supplies">
+    <option value="Party Favors">
+    <option value="Processed Food">
+    <option value="Quartz (Raw)">
+    <option value="Silicon">
+    <option value="Stims">
+    <option value="Souvenirs">
+    <option value="Waste">
+</datalist>
+
 <div class="container">
     <header>
-        <h1>STAR CITIZEN: PERSISTENT OPS LEDGER</h1>
+        <h1>STAR CITIZEN: PREDICTIVE OPS LEDGER</h1>
         <div id="db-count">DATABASE: 0 CONTRACTS</div>
     </header>
 
     <div class="toolbar">
-        <input type="text" id="auto-search" placeholder="Search Database..." list="contract-suggestions">
+        <input type="text" id="auto-search" placeholder="Quick-Load Contract by Name..." list="contract-suggestions">
         <datalist id="contract-suggestions"></datalist>
-        <button class="btn btn-add" onclick="autoFillSelected()">Load & Fill</button>
-        <button class="btn btn-save" onclick="exportToJson()">Export & Update JSON</button>
+        <button class="btn btn-add" onclick="autoFillSelected()">Load</button>
+        <button class="btn btn-save" onclick="exportToJson()">Export DB</button>
         <input type="file" id="import-file" style="display:none" onchange="importJson(event)">
-        <button class="btn btn-load" onclick="document.getElementById('import-file').click()">Import JSON</button>
+        <button class="btn btn-load" onclick="document.getElementById('import-file').click()">Import DB</button>
     </div>
 
     <div id="contract-list"></div>
-    <button class="btn btn-add" style="width:100%" onclick="addContract()">+ MANUAL ENTRY</button>
+    <button class="btn btn-add" style="width:100%" onclick="addContract()">+ NEW ENTRY</button>
 </div>
 
 <script>
-    const DATA = {
-        categories: ["Priority", "Hauling", "Hauling-Interstellar"],
-        systems: ["Stanton", "Pyro", "Nyx"],
-        regions: {
-            "Stanton": ["Crusader", "Hurston", "ArcCorp", "microTech"],
-            "Pyro": ["Pyro I", "Pyro II", "Pyro III", "Pyro IV", "Pyro V", "Pyro VI"],
-            "Nyx": ["Levski", "Nyx II", "Nyx III"]
-        },
-        materials: ["Aphorite", "Audio-Visual Equipment", "Beryl", "Carbon", "Copper (Ore)", "Diamond", "Distilled Spirits", "Fresh Food", "Gold", "Iron (Ore)", "Laranite", "Medical Supplies", "Party Favors", "Processed Food", "Quartz (Raw)", "Silicon", "Stims", "Souvenirs", "Waste"]
-    };
-
     let globalContractData = [];
 
     function addContract(initialData = null) {
@@ -118,43 +142,39 @@
                 
                 <div class="row">
                     <div class="input-group" style="flex:2">
-                        <label>Contract Summary</label>
-                        <input type="text" class="c-name" placeholder="Name" value="${initialData?.name || ''}">
+                        <label>Contract Name</label>
+                        <input type="text" class="c-name" value="${initialData?.name || ''}">
                     </div>
                 </div>
 
                 <div class="card-content">
-                    <div class="category-header" style="margin-bottom:15px; border-bottom:1px solid #444; padding-bottom:10px;">
-                        <label>Operation Category</label>
-                        <select class="c-category">
-                            ${DATA.categories.map(cat => `<option value="${cat}" ${initialData?.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-                        </select>
-                        <label style="margin-left:20px;">Payout</label>
-                        <input type="text" class="c-payout" style="width:120px" value="${initialData?.payout || ''}">
+                    <div class="row" style="background: rgba(255,255,255,0.05); padding:10px; border-radius:4px;">
+                        <div class="input-group">
+                            <label>Category</label>
+                            <input type="text" class="c-category" list="list-categories" value="${initialData?.category || 'Hauling'}">
+                        </div>
+                        <div class="input-group">
+                            <label>Payout (aUEC)</label>
+                            <input type="text" class="c-payout" value="${initialData?.payout || ''}">
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="input-group">
                             <span class="section-label">Origin (Pickup)</span>
-                            <select class="c-p-system" onchange="updateRegions(this, 'p-reg-${id}')">
-                                <option value="">System</option>
-                                ${DATA.systems.map(s => `<option value="${s}" ${initialData?.pSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
-                            </select>
-                            <select id="p-reg-${id}" class="c-p-region">
-                                <option value="${initialData?.pRegion || ''}">${initialData?.pRegion || 'Select System'}</option>
-                            </select>
+                            <div class="row" style="gap:10px; margin-bottom:5px;">
+                                <input type="text" class="c-p-system" list="list-systems" placeholder="System" value="${initialData?.pSystem || ''}">
+                                <input type="text" class="c-p-region" placeholder="Region (e.g. Levski)" value="${initialData?.pRegion || ''}">
+                            </div>
                             <div class="manifest-area" id="p-man-${id}"></div>
-                            <button class="btn" style="font-size:0.6rem" onclick="addManifestItem('${id}', 'p-man-${id}', true)">+ Add Pickup</button>
+                            <button class="btn" style="font-size:0.6rem" onclick="addManifestItem('${id}', true)">+ Add Pickup</button>
                         </div>
                         <div class="input-group">
                             <span class="section-label">Destination (Delivery)</span>
-                            <select class="c-d-system" onchange="updateRegions(this, 'd-reg-${id}')">
-                                <option value="">System</option>
-                                ${DATA.systems.map(s => `<option value="${s}" ${initialData?.dSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
-                            </select>
-                            <select id="d-reg-${id}" class="c-d-region">
-                                <option value="${initialData?.dRegion || ''}">${initialData?.dRegion || 'Select System'}</option>
-                            </select>
+                            <div class="row" style="gap:10px; margin-bottom:5px;">
+                                <input type="text" class="c-d-system" list="list-systems" placeholder="System" value="${initialData?.dSystem || ''}">
+                                <input type="text" class="c-d-region" placeholder="Region (e.g. Lorville)" value="${initialData?.dRegion || ''}">
+                            </div>
                             <div class="manifest-area" id="d-man-${id}"></div>
                         </div>
                     </div>
@@ -162,49 +182,40 @@
             </div>`;
         document.getElementById('contract-list').insertAdjacentHTML('beforeend', html);
         
-        // Initializing manifests
         if (initialData?.pManifest) {
             initialData.pManifest.forEach((m, index) => {
-                const dData = initialData.dManifest ? initialData.dManifest[index] : null;
-                addManifestItem(id, `p-man-${id}`, true, m, dData);
+                const dLoc = initialData.dManifest ? initialData.dManifest[index]?.loc : '';
+                addManifestItem(id, true, m, dLoc);
             });
         }
     }
 
-    function addManifestItem(contractId, containerId, isPickup, pData = null, dData = null) {
+    function addManifestItem(contractId, isPickup, pData = null, dLoc = '') {
         const index = document.querySelectorAll(`#p-man-${contractId} .step-row`).length;
         const syncId = `sync-${contractId}-${index}`;
 
-        // Add Pickup Row
         const phtml = `
             <div class="step-row" id="p-${syncId}">
-                <select class="m-item" onchange="syncData('${syncId}')">
-                    ${DATA.materials.map(m => `<option value="${m}" ${pData?.item === m ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-                <input type="number" class="m-scu" style="width:60px" value="${pData?.scu || 0}" oninput="syncData('${syncId}')">
-                <input type="text" class="m-loc" style="width:80px" placeholder="Loc" value="${pData?.loc || ''}">
+                <input type="text" class="m-item" list="list-materials" placeholder="Commodity" value="${pData?.item || ''}" oninput="syncData('${syncId}')">
+                <input type="number" class="m-scu" style="width:70px" placeholder="SCU" value="${pData?.scu || 0}" oninput="syncData('${syncId}')">
+                <input type="text" class="m-loc" style="width:100px" placeholder="Origin Loc" value="${pData?.loc || ''}">
             </div>`;
         document.getElementById(`p-man-${contractId}`).insertAdjacentHTML('beforeend', phtml);
 
-        // Add Corresponding Delivery Row automatically
         const dhtml = `
             <div class="step-row" id="d-${syncId}">
-                <select class="m-item" disabled id="sync-item-${syncId}">
-                    ${DATA.materials.map(m => `<option value="${m}" ${pData?.item === m ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-                <input type="number" class="m-scu" disabled style="width:60px" id="sync-scu-${syncId}" value="${pData?.scu || 0}">
-                <input type="text" class="m-loc" style="width:80px" placeholder="Dest Loc" value="${dData?.loc || ''}">
+                <input type="text" class="m-item" id="sync-item-${syncId}" placeholder="Commodity" value="${pData?.item || ''}" readonly style="opacity:0.6">
+                <input type="number" class="m-scu" id="sync-scu-${syncId}" style="width:70px" placeholder="SCU" value="${pData?.scu || 0}" readonly style="opacity:0.6">
+                <input type="text" class="m-loc" style="width:100px" placeholder="Dest Loc" value="${dLoc || ''}">
             </div>`;
         document.getElementById(`d-man-${contractId}`).insertAdjacentHTML('beforeend', dhtml);
     }
 
     function syncData(syncId) {
-        const sourceRow = document.getElementById(`p-${syncId}`);
-        const targetItem = document.getElementById(`sync-item-${syncId}`);
-        const targetScu = document.getElementById(`sync-scu-${syncId}`);
-
-        targetItem.value = sourceRow.querySelector('.m-item').value;
-        targetScu.value = sourceRow.querySelector('.m-scu').value;
+        const pItem = document.querySelector(`#p-${syncId} .m-item`).value;
+        const pScu = document.querySelector(`#p-${syncId} .m-scu`).value;
+        document.getElementById(`sync-item-${syncId}`).value = pItem;
+        document.getElementById(`sync-scu-${syncId}`).value = pScu;
     }
 
     function toggleMinimize(id) { document.getElementById(`c-${id}`).classList.toggle('minimized'); }
@@ -213,7 +224,7 @@
         const screenContracts = [];
         document.querySelectorAll('.contract-card').forEach(card => {
             const id = card.dataset.id;
-            const contract = {
+            screenContracts.push({
                 category: card.querySelector('.c-category').value,
                 name: card.querySelector('.c-name').value,
                 payout: card.querySelector('.c-payout').value,
@@ -231,8 +242,7 @@
                     scu: row.querySelector('.m-scu').value,
                     loc: row.querySelector('.m-loc').value
                 }))
-            };
-            screenContracts.push(contract);
+            });
         });
 
         const nameSet = new Set(screenContracts.map(c => c.name));
@@ -240,7 +250,7 @@
         const blob = new Blob([JSON.stringify(merged, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `hauling_db_update.json`;
+        a.download = `hauling_master_db.json`;
         a.click();
     }
 
@@ -262,11 +272,6 @@
         const name = document.getElementById('auto-search').value;
         const match = globalContractData.find(c => c.name === name);
         if (match) { addContract(match); document.getElementById('auto-search').value = ""; }
-    }
-
-    function updateRegions(select, targetId) {
-        const system = select.value;
-        document.getElementById(targetId).innerHTML = DATA.regions[system]?.map(r => `<option value="${r}">${r}</option>`).join('') || '<option value="">N/A</option>';
     }
 
     function removeElement(id) { document.getElementById(id).remove(); }
