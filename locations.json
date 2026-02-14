@@ -6,9 +6,13 @@
     "microTech": ["New Babbage", "Port Tressler", "Calliope - Rayari", "Clio - Rayari"]
   },
   "Pyro": {
-    "Pyro I": ["Checkmate", "Bloom"],
-    "Pyro II": ["Monolith", "Roughneck"],
-    "Pyro III": ["Starlight"]
+    "Pyro I": ["Stanton Gateway", "Bloom", "Checkmate Station (PYR2-L4)"],
+    "Pyro II (Monox)": ["Outlaw Outposts", "Mining Scars"],
+    "Pyro III (Bloom)": ["Orbituary", "Starlight Service Station (PYR3-L1)", "Patch City (PYR3-L3)", "Abandoned Mining Hubs"],
+    "Pyro IV": ["Miyazaki", "Kanda Station", "Warped Landscape Sites"],
+    "Pyro V": ["Gaslight (PYR5-L2)", "Rod's Fuel 'N Supplies (PYR5-L4)", "Rat's Nest (PYR5-L5)", "Hydrogen Harvesting Points"],
+    "Pyro VI (Terminus)": ["Ruin Station (XenoThreat)", "Endgame (PYR6-L3)", "Dudley & Daughters (PYR6-L4)", "Megumi Refueling (PYR6-L5)"],
+    "Jump Points": ["Stanton Gateway", "Nyx Gateway"]
   },
   "Nyx": {
     "Delamar": ["Levski", "Mining Area 157"]
