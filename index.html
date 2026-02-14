@@ -32,13 +32,9 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
+            display: flex; gap: 15px; align-items: center;
             border: 1px solid var(--border);
-            position: sticky;
-            top: 10px;
-            z-index: 100;
+            position: sticky; top: 10px; z-index: 100;
         }
 
         .contract-card {
@@ -51,17 +47,11 @@
             transition: all 0.3s ease;
         }
 
-        /* Minimize State */
-        .contract-card.minimized {
-            padding: 10px 20px;
-            background: var(--minimized);
-            border-left: 5px solid var(--primary);
-        }
+        .contract-card.minimized { padding: 10px 20px; background: var(--minimized); border-left: 5px solid var(--primary); }
         .contract-card.minimized .card-content { display: none; }
         .contract-card.minimized .row { margin-bottom: 0; }
 
         .card-controls { position: absolute; right: 15px; top: 10px; display: flex; gap: 10px; }
-
         .section-label { font-size: 0.75rem; color: var(--primary); font-weight: bold; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); display: block; }
         .row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
         .input-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
@@ -115,7 +105,6 @@
         materials: ["Aphorite", "Audio-Visual Equipment", "Beryl", "Carbon", "Copper (Ore)", "Diamond", "Distilled Spirits", "Fresh Food", "Gold", "Iron (Ore)", "Laranite", "Medical Supplies", "Party Favors", "Processed Food", "Quartz (Raw)", "Silicon", "Stims", "Souvenirs", "Waste"]
     };
 
-    // Global memory to track imported data
     let globalContractData = [];
 
     function addContract(initialData = null) {
@@ -146,7 +135,7 @@
 
                     <div class="row">
                         <div class="input-group">
-                            <span class="section-label">Origin</span>
+                            <span class="section-label">Origin (Pickup)</span>
                             <select class="c-p-system" onchange="updateRegions(this, 'p-reg-${id}')">
                                 <option value="">System</option>
                                 ${DATA.systems.map(s => `<option value="${s}" ${initialData?.pSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
@@ -155,10 +144,10 @@
                                 <option value="${initialData?.pRegion || ''}">${initialData?.pRegion || 'Select System'}</option>
                             </select>
                             <div class="manifest-area" id="p-man-${id}"></div>
-                            <button class="btn" style="font-size:0.6rem" onclick="addManifestItem('p-man-${id}')">+ Pickup</button>
+                            <button class="btn" style="font-size:0.6rem" onclick="addManifestItem('${id}', 'p-man-${id}', true)">+ Add Pickup</button>
                         </div>
                         <div class="input-group">
-                            <span class="section-label">Destination</span>
+                            <span class="section-label">Destination (Delivery)</span>
                             <select class="c-d-system" onchange="updateRegions(this, 'd-reg-${id}')">
                                 <option value="">System</option>
                                 ${DATA.systems.map(s => `<option value="${s}" ${initialData?.dSystem === s ? 'selected' : ''}>${s}</option>`).join('')}
@@ -167,35 +156,63 @@
                                 <option value="${initialData?.dRegion || ''}">${initialData?.dRegion || 'Select System'}</option>
                             </select>
                             <div class="manifest-area" id="d-man-${id}"></div>
-                            <button class="btn" style="font-size:0.6rem" onclick="addManifestItem('d-man-${id}')">+ Delivery</button>
                         </div>
                     </div>
                 </div>
             </div>`;
         document.getElementById('contract-list').insertAdjacentHTML('beforeend', html);
         
-        if (initialData?.pManifest) initialData.pManifest.forEach(m => addManifestItem(`p-man-${id}`, m));
-        if (initialData?.dManifest) initialData.dManifest.forEach(m => addManifestItem(`d-man-${id}`, m));
+        // Initializing manifests
+        if (initialData?.pManifest) {
+            initialData.pManifest.forEach((m, index) => {
+                const dData = initialData.dManifest ? initialData.dManifest[index] : null;
+                addManifestItem(id, `p-man-${id}`, true, m, dData);
+            });
+        }
     }
 
-    function toggleMinimize(id) {
-        document.getElementById(`c-${id}`).classList.toggle('minimized');
-    }
+    function addManifestItem(contractId, containerId, isPickup, pData = null, dData = null) {
+        const index = document.querySelectorAll(`#p-man-${contractId} .step-row`).length;
+        const syncId = `sync-${contractId}-${index}`;
 
-    function addManifestItem(containerId, mData = null) {
-        const html = `
-            <div class="step-row">
-                <select class="m-item">${DATA.materials.map(m => `<option value="${m}" ${mData?.item === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
-                <input type="number" class="m-scu" style="width:60px" value="${mData?.scu || 0}">
-                <input type="text" class="m-loc" style="width:80px" value="${mData?.loc || ''}">
+        // Add Pickup Row
+        const phtml = `
+            <div class="step-row" id="p-${syncId}">
+                <select class="m-item" onchange="syncData('${syncId}')">
+                    ${DATA.materials.map(m => `<option value="${m}" ${pData?.item === m ? 'selected' : ''}>${m}</option>`).join('')}
+                </select>
+                <input type="number" class="m-scu" style="width:60px" value="${pData?.scu || 0}" oninput="syncData('${syncId}')">
+                <input type="text" class="m-loc" style="width:80px" placeholder="Loc" value="${pData?.loc || ''}">
             </div>`;
-        document.getElementById(containerId).insertAdjacentHTML('beforeend', html);
+        document.getElementById(`p-man-${contractId}`).insertAdjacentHTML('beforeend', phtml);
+
+        // Add Corresponding Delivery Row automatically
+        const dhtml = `
+            <div class="step-row" id="d-${syncId}">
+                <select class="m-item" disabled id="sync-item-${syncId}">
+                    ${DATA.materials.map(m => `<option value="${m}" ${pData?.item === m ? 'selected' : ''}>${m}</option>`).join('')}
+                </select>
+                <input type="number" class="m-scu" disabled style="width:60px" id="sync-scu-${syncId}" value="${pData?.scu || 0}">
+                <input type="text" class="m-loc" style="width:80px" placeholder="Dest Loc" value="${dData?.loc || ''}">
+            </div>`;
+        document.getElementById(`d-man-${contractId}`).insertAdjacentHTML('beforeend', dhtml);
     }
+
+    function syncData(syncId) {
+        const sourceRow = document.getElementById(`p-${syncId}`);
+        const targetItem = document.getElementById(`sync-item-${syncId}`);
+        const targetScu = document.getElementById(`sync-scu-${syncId}`);
+
+        targetItem.value = sourceRow.querySelector('.m-item').value;
+        targetScu.value = sourceRow.querySelector('.m-scu').value;
+    }
+
+    function toggleMinimize(id) { document.getElementById(`c-${id}`).classList.toggle('minimized'); }
 
     function exportToJson() {
-        // Collect current screen data
         const screenContracts = [];
         document.querySelectorAll('.contract-card').forEach(card => {
+            const id = card.dataset.id;
             const contract = {
                 category: card.querySelector('.c-category').value,
                 name: card.querySelector('.c-name').value,
@@ -204,12 +221,12 @@
                 pRegion: card.querySelector('.c-p-region').value,
                 dSystem: card.querySelector('.c-d-system').value,
                 dRegion: card.querySelector('.c-d-region').value,
-                pManifest: Array.from(card.querySelectorAll('#p-man-' + card.dataset.id + ' .step-row')).map(row => ({
+                pManifest: Array.from(card.querySelectorAll(`#p-man-${id} .step-row`)).map(row => ({
                     item: row.querySelector('.m-item').value,
                     scu: row.querySelector('.m-scu').value,
                     loc: row.querySelector('.m-loc').value
                 })),
-                dManifest: Array.from(card.querySelectorAll('#d-man-' + card.dataset.id + ' .step-row')).map(row => ({
+                dManifest: Array.from(card.querySelectorAll(`#d-man-${id} .step-row`)).map(row => ({
                     item: row.querySelector('.m-item').value,
                     scu: row.querySelector('.m-scu').value,
                     loc: row.querySelector('.m-loc').value
@@ -218,10 +235,8 @@
             screenContracts.push(contract);
         });
 
-        // Merge screen data with global memory (avoiding duplicates by name)
         const nameSet = new Set(screenContracts.map(c => c.name));
         const merged = [...screenContracts, ...globalContractData.filter(c => !nameSet.has(c.name))];
-
         const blob = new Blob([JSON.stringify(merged, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -232,12 +247,7 @@
     function importJson(event) {
         const reader = new FileReader();
         reader.onload = e => {
-            const imported = JSON.parse(e.target.result);
-            // Merge into global memory
-            globalContractData = [...globalContractData, ...imported];
-            // Remove duplicates from global memory
-            globalContractData = Array.from(new Map(globalContractData.map(c => [c.name, c])).values());
-            
+            globalContractData = JSON.parse(e.target.result);
             updateSuggestions();
             document.getElementById('db-count').innerText = `DATABASE: ${globalContractData.length} CONTRACTS`;
         };
@@ -245,23 +255,18 @@
     }
 
     function updateSuggestions() {
-        const list = document.getElementById('contract-suggestions');
-        list.innerHTML = globalContractData.map(c => `<option value="${c.name}">`).join('');
+        document.getElementById('contract-suggestions').innerHTML = globalContractData.map(c => `<option value="${c.name}">`).join('');
     }
 
     function autoFillSelected() {
         const name = document.getElementById('auto-search').value;
         const match = globalContractData.find(c => c.name === name);
-        if (match) {
-            addContract(match);
-            document.getElementById('auto-search').value = "";
-        }
+        if (match) { addContract(match); document.getElementById('auto-search').value = ""; }
     }
 
     function updateRegions(select, targetId) {
         const system = select.value;
-        const regionSelect = document.getElementById(targetId);
-        regionSelect.innerHTML = DATA.regions[system]?.map(r => `<option value="${r}">${r}</option>`).join('') || '<option value="">N/A</option>';
+        document.getElementById(targetId).innerHTML = DATA.regions[system]?.map(r => `<option value="${r}">${r}</option>`).join('') || '<option value="">N/A</option>';
     }
 
     function removeElement(id) { document.getElementById(id).remove(); }
