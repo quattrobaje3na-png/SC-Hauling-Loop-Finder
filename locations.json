@@ -25,4 +25,9 @@
     "Pyro VI (Terminus)": ["Blackrock Exchange", "Bullock's Reach", "Canard View", "Kinder Plots", "Last Landings", "Rough Landing", "Scarper's Turn", "Stonetree", "Supply Gap", "Watcher's Depot", "Ruin Station", "PYR6-L3 (Endgame)", "PYR6-L4 (Dudley & Daughters)", "PYR6-L5 (Megumi Refueling)"],
     "Jump Points": ["Stanton Gateway", "Nyx Gateway"]
   }
+  },
+  "Nyx": {
+    "Delamar": ["Levski", "Mining Area 157"]
+  }
+}
 }
