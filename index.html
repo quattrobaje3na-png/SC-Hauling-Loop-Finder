@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCS Hauling: Dual-Manifest Ledger</title>
+    <title>SCS Hauling: Professional Logistics Hub</title>
     <style>
         :root {
-            --primary: #ff4d4d;
+            --primary: #ff4d4d; /* Red Comet Accent */
             --bg: #0d0d0d;
             --card: #1a1a1a;
             --text: #e0e0e0;
             --border: #333;
             --accent: #2a2a2a;
-            --pickup-dim: #2d4a2d;
-            --delivery-dim: #4a2d2d;
         }
 
         body {
@@ -108,13 +106,13 @@
 
 <div class="container">
     <header>
-        <h1>STAR CITIZEN: DUAL-MANIFEST LOGISTICS</h1>
-        <div id="status">STATUS: CALIBRATED</div>
+        <h1>STAR CITIZEN: LOGISTICS MANIFEST</h1>
+        <div id="status">STATUS: ASSETS LOADED</div>
     </header>
 
     <div id="contract-list"></div>
 
-    <button class="btn btn-add" onclick="addContract()">+ NEW CROSS-SYSTEM OPERATION</button>
+    <button class="btn btn-add" onclick="addContract()">+ INITIALIZE CROSS-SYSTEM HAUL</button>
 </div>
 
 <script>
@@ -125,23 +123,29 @@
             "Pyro": ["Pyro I", "Pyro II", "Pyro III", "Pyro IV", "Pyro V", "Pyro VI"],
             "Nyx": ["Levski", "Nyx II", "Nyx III"]
         },
-        materials: ["Laranite", "Gold", "Quartz (Raw)", "Silicon", "Iron (Ore)", "Medical Supplies", "Distilled Spirits", "Processed Food", "Waste", "Stims"]
+        // Updated Commodity Manifest
+        materials: [
+            "Aphorite", "Audio-Visual Equipment", "Beryl", "Carbon", "Copper (Ore)", 
+            "Diamond", "Distilled Spirits", "Fresh Food", "Gold", "Iron (Ore)", 
+            "Laranite", "Medical Supplies", "Party Favors", "Processed Food", 
+            "Quartz (Raw)", "Silicon", "Stims", "Souvenirs", "Waste"
+        ]
     };
 
     function addContract() {
         const id = Date.now();
         const html = `
             <div class="contract-card" id="c-${id}">
-                <button class="btn btn-delete" style="position:absolute; right:15px; top:15px;" onclick="removeElement('c-${id}')">CANCEL OPS</button>
+                <button class="btn btn-delete" style="position:absolute; right:15px; top:15px;" onclick="removeElement('c-${id}')">SCRUB OPS</button>
                 
                 <div class="row">
                     <div class="input-group">
-                        <label>Contract Title</label>
-                        <input type="text" placeholder="e.g. Levski to Lorville Heavy Haul">
+                        <label>Contract Designation</label>
+                        <input type="text" placeholder="e.g. Red Wind Bulk Cargo">
                     </div>
                     <div class="input-group" style="flex: 0.5;">
-                        <label>Total Payout (aUEC)</label>
-                        <input type="text" placeholder="250,000">
+                        <label>Estimated Payout (aUEC)</label>
+                        <input type="text" placeholder="0">
                     </div>
                 </div>
 
@@ -195,8 +199,8 @@
         const itemId = Date.now() + Math.random();
         const html = `
             <div class="step-row" id="i-${itemId}">
-                <div class="input-group" style="min-width: 120px;">
-                    <label>Cargo</label>
+                <div class="input-group" style="min-width: 140px;">
+                    <label>Commodity</label>
                     <select>
                         ${DATA.materials.map(m => `<option value="${m}">${m}</option>`).join('')}
                     </select>
@@ -207,7 +211,7 @@
                 </div>
                 <div class="input-group">
                     <label>Station/Hangar</label>
-                    <input type="text" placeholder="Loc">
+                    <input type="text" placeholder="Location">
                 </div>
                 <button class="btn btn-delete" onclick="removeElement('i-${itemId}')">×</button>
             </div>
@@ -227,6 +231,7 @@
         document.getElementById(id).remove();
     }
 
+    // Launch first card
     addContract();
 </script>
 
